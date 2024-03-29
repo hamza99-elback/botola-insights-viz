@@ -12,13 +12,7 @@ fm_rubik = FontManager(
 
 class Pizzachart:
     def __init__(
-        self,
-        categories,
-        min_range,
-        max_range,
-        group_1,
-        slice_colors,
-        text_colors
+        self, categories, min_range, max_range, group_1, slice_colors, text_colors
     ):
         self.pizza = PyPizza(
             params=categories,  # list of parameters
