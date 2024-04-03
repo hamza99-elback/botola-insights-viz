@@ -9,6 +9,8 @@ from mplsoccer import (
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
+from tools.json_tool import JsonTool
+from data_processing.shootmap_processor import ShootmapProcessor
 
 fm_rubik = FontManager('https://raw.githubusercontent.com/google/fonts/main/ofl/'
                        'rubikmonoone/RubikMonoOne-Regular.ttf')
@@ -49,7 +51,7 @@ class ShootMap:
         
         
     
-    def draw_shootmap(self, save_figure=False, show_figure=True):
+    def draw(self, save_figure=False, show_figure=True):
         for i, row in self.data.iterrows():
             self.pitch.annotate(str(row['time']) + " - " + row["player.name"], (row['playerCoordinates.x'] + 2, row['playerCoordinates.y'] + 2), color="#000000",
                         fontsize=12, ax=self.ax)
@@ -71,7 +73,7 @@ class ShootMap:
         if show_figure:
             plt.show()
 
-    def draw_shootmap_v2(self, save_figure=False, show_figure=True):
+    def draw_v2(self, save_figure=False, show_figure=True):
         if self.df_team1 is not None and not self.df_team1.empty:
             for i, row in self.df_team1.iterrows():
                 marker_color = self.team1_c if row['shotType'] == 'goal' else (0, 0, 0, 0)
@@ -84,7 +86,7 @@ class ShootMap:
                                 ax=self.ax)
         if self.df_team2 is not None and not self.df_team2.empty:
             for i, row in self.df_team2.iterrows():
-                marker_color = self.team2_ce if row['shotType'] == 'goal' else (0, 0, 0, 0)
+                marker_color = self.team2_c if row['shotType'] == 'goal' else (0, 0, 0, 0)
                 edge_colors = self.team2_edge_c if row['shotType'] == 'goal' else self.team2_c
 
                 self.pitch.scatter(row["PlayerCoordinatesX"], row["PlayerCoordinatesY"],
@@ -98,3 +100,12 @@ class ShootMap:
             plt.savefig(f'./images/shootmap/shots_{str(formatted_datetime)}.png', dpi=300, bbox_inches='tight', transparent=True)
         if show_figure:
             plt.show()
+
+if __name__=="__main__":
+    json_tool = JsonTool(path="./data/shootmap_data.json")
+    data = json_tool.get_data()
+    shootmap_processor = ShootmapProcessor(data=data)
+    df_team1, df_team2 = shootmap_processor.process_data()
+    pitch = ShootMap(df_team1=df_team1, df_team2=df_team2, pitch=Pitch, team1_c="", team2_c="")
+    pitch.draw_shootmap_v2(save_figure=True)
+    print(data)

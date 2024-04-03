@@ -42,7 +42,7 @@ class Radarchart:
         self.group1_c = group1_c
         self.group2_c = group2_c
 
-    def draw_radarchart(self, save_figure: bool = False, show_figure: bool = True):
+    def draw(self, save_figure: bool = False, show_figure: bool = True):
         """Draw Radarchart
 
         Args:

@@ -27,7 +27,7 @@ class StackedBarChart:
         self.home_c = home_c
         self.away_c = away_c
 
-    def draw_stackedbarchart(self, save_figure: bool = False, show_figure: bool = True):
+    def draw(self, save_figure: bool = False, show_figure: bool = True):
         """Draw Radarchart
 
         Args:
@@ -159,4 +159,4 @@ if __name__ == "__main__":
     stackedbarchart = StackedBarChart(
         data=data, total_values=total_values, proportions=proportions
     )
-    stackedbarchart.draw_stackedbarchart(show_figure=True, save_figure=True)
+    stackedbarchart.draw(show_figure=True, save_figure=True)

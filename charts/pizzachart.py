@@ -32,7 +32,7 @@ class Pizzachart:
         self.text_colors = text_colors
         self.ax.set_facecolor((0, 0, 0, 0))
 
-    def draw_pizzachart(self, save_figure: bool = False, show_figure: bool = True):
+    def draw(self, save_figure: bool = False, show_figure: bool = True):
         """Draw Radarchart
 
         Args:
@@ -81,4 +81,4 @@ class Pizzachart:
 
 if __name__ == "__main__":
     pizza = Pizzachart()
-    pizza.draw_pizzachart()
+    pizza.draw()
