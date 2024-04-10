@@ -100,6 +100,7 @@ class ShootMap:
             plt.savefig(f'./images/shootmap/shots_{str(formatted_datetime)}.png', dpi=300, bbox_inches='tight', transparent=True)
         if show_figure:
             plt.show()
+        return self.fig, self.ax
 
 if __name__=="__main__":
     json_tool = JsonTool(path="./data/shootmap_data.json")
