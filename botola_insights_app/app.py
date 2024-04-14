@@ -452,7 +452,7 @@ def heatmap_visualisations():
 def main():
     left_co, cent_co, last_co = st.columns(3)
     with cent_co:
-        image = Image.open("./assets/images/logo_botola_insights_red.png")
+        image = Image.open("assets/images/logo_botola_insights_red.png")
         st.image(image, width=150)
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
         ["Heatmap", "Shootmap", "Pizzachart", "Radarchart", "Stackedbar"]
