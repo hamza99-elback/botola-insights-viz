@@ -19,6 +19,7 @@ from mplsoccer import (
 )
 import logging
 import datetime
+from PIL import Image
 
 try:
     now = datetime.datetime.now()
@@ -451,7 +452,8 @@ def heatmap_visualisations():
 def main():
     left_co, cent_co, last_co = st.columns(3)
     with cent_co:
-        st.image("assets/images/logo_botola_insights_red.png", width=150)
+        image = Image.open("./assets/images/logo_botola_insights_red.png")
+        st.image(image, width=150)
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
         ["Heatmap", "Shootmap", "Pizzachart", "Radarchart", "Stackedbar"]
     )
