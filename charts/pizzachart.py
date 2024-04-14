@@ -12,7 +12,7 @@ fm_rubik = FontManager(
 
 class Pizzachart:
     def __init__(
-        self, categories, min_range, max_range, group_1, slice_colors, text_colors
+        self, min_range, max_range, group_1, slice_colors, text_colors, categories=["1", "1"]
     ):
         self.pizza = PyPizza(
             params=categories,  # list of parameters
@@ -27,12 +27,11 @@ class Pizzachart:
             straight_line_lw=1,
             other_circle_ls="-.",
         )
-        self.group_1 = group_1
+        self.group_1_int = group_1
         self.slice_colors = slice_colors
         self.text_colors = text_colors
-        self.ax.set_facecolor((0, 0, 0, 0))
 
-    def draw(self, save_figure: bool = False, show_figure: bool = True):
+    def draw(self, save_figure: bool = False, show_figure: bool = False):
         """Draw Radarchart
 
         Args:
@@ -49,7 +48,7 @@ class Pizzachart:
             blank_alpha=0.4,  # alpha for blank-space colors
             kwargs_slices=dict(
                 edgecolor="#F2F2F2", zorder=2, linewidth=1
-            ),  # values to be used when plotting slices
+            ),
             kwargs_params=dict(
                 color="white", fontsize=9, va="center", wrap=True
             ),  # values to be used when adding parameter
@@ -63,9 +62,10 @@ class Pizzachart:
                     boxstyle="round,pad=0.5",
                     lw=1,
                 ),
-            ),  # values to be used when adding parameter-values
+            ), 
         )
-
+        ax.set_facecolor((0, 0, 0, 0))
+        
         if save_figure:
             current_datetime = datetime.now()
             formatted_datetime = current_datetime.strftime("%d-%m-%y_%H-%M-%S")
@@ -77,6 +77,8 @@ class Pizzachart:
             )
         if show_figure:
             plt.show()
+        
+        return fig, ax
 
 
 if __name__ == "__main__":
