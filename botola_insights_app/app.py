@@ -20,11 +20,14 @@ from mplsoccer import (
 import logging
 import datetime
 
-now = datetime.datetime.now()
-now_str = now.strftime("%Y-%m-%d_%H-%M-%S")
-filename = f'./../logs/app_{now_str}.log'
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=filename, filemode='w')
-
+try:
+    now = datetime.datetime.now()
+    now_str = now.strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f'./../logs/app_{now_str}.log'
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=filename, filemode='w')
+except Exception as e:
+    print("error in configuring logging")
+    
 random.seed(42)
 
 
