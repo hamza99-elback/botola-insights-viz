@@ -1,5 +1,7 @@
 __pycache__
 .vscode
 mplsoccer
-*.jpg
-*.png
+images/barchart
+images/shootmap
+images/heatmap
+*.log
