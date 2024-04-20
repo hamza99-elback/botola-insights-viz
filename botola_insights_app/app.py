@@ -21,6 +21,9 @@ import logging
 import datetime
 from PIL import Image
 
+# Make connection with Azure Database
+CONN = get_conn()
+
 try:
     now = datetime.datetime.now()
     now_str = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -59,26 +62,26 @@ def kpis_multiselect(kpis_list, uuid):
     return st.multiselect("Select KPIs", kpis_list, key=f"kpis_{uuid}")
 
 
-def get_teams_list(conn, cursor):
+def get_teams_list(cursor):
     query_get_teams = """SELECT [teamId]
                 ,[teamIdInterne]
                 ,[teamName]
                 ,[teamNameCode]
                 ,[teamShortName]
             FROM [dim].[AxeTeam]"""
-    teams = get_query_result(query_get_teams, conn, cursor)
+    teams = get_query_result(query_get_teams, cursor)
     # get Team names
     team_names = tuple([team[2] for team in teams])
     return team_names
 
 
-def get_players_list(team_name: str, conn, cursor):
+def get_players_list(team_name: str, cursor):
     query_get_players = f"""SELECT [teamName]
                 ,[playerName]
             FROM [dim].[AxePlayer] p JOIN [dim].[AxeTeam] t 
             ON p.teamId = t.teamIdInterne 
             WHERE t.teamName = '{str(team_name)}'"""
-    players = get_query_result(query_get_players, conn, cursor)
+    players = get_query_result(query_get_players, cursor)
     # get Team names
     player_names = tuple([player[1] for player in players])
     return player_names
@@ -87,12 +90,11 @@ def get_players_list(team_name: str, conn, cursor):
 def shootmap_visualisations():
     """Function to display the shootmap visualisations in the Streamlit app"""
     col1, col2, col3, col4 = st.columns(4)
-    conn = get_conn()
-    cursor = get_cursor(conn)
+    cursor = get_cursor(CONN)
     query_get_seasons = """SELECT [seasonYear]
     FROM [dim].[AxeTournament]
     WHERE [seasonName] LIKE '%Botola%'"""
-    seasons = get_query_result(query_get_seasons, conn, cursor)
+    seasons = get_query_result(query_get_seasons, cursor)
     season_names = tuple([season[0] for season in seasons])
     with col1:
         season = st.selectbox("Shoose a Season", season_names, key="season")
@@ -103,11 +105,11 @@ def shootmap_visualisations():
             ,[teamNameCode]
             ,[teamShortName]
         FROM [dim].[AxeTeam]"""
-    teams = get_query_result(query_get_teams, conn, cursor)
+    teams = get_query_result(query_get_teams, cursor)
     team_names = tuple([team[2] for team in teams])
     with col2:
         team_shootmap = st.selectbox("Shoose a Team", team_names, key="team_shootmap")
-    cursor = get_cursor(conn)
+    cursor = get_cursor(CONN)
     query_get_matches = f"""
                 SELECT [matcheId],
             [round],
@@ -119,7 +121,7 @@ def shootmap_visualisations():
         ON [m].[tounamentIdInterne]=[t].[tournamentId]
         WHERE [t].[seasonYear]='{str(season)}'
         AND ([homeName]='{str(team_shootmap)}' OR [awayName]='{str(team_shootmap)}')"""
-    matches = get_query_result(query_get_matches, conn, cursor)
+    matches = get_query_result(query_get_matches, cursor)
     matches_names = tuple([match[-1] for match in matches])
     with col3:
         match = st.selectbox("Shoose a Match", matches_names, key="match")
@@ -127,7 +129,7 @@ def shootmap_visualisations():
         home_c = st.color_picker("Home Color", "#00f900")
         away_c = st.color_picker("Away Color", "#F90004")
 
-    cursor = get_cursor(conn)
+    cursor = get_cursor(CONN)
     query_get_shootmap_data = f"""
             SELECT [PlayerId]
         ,[s].[matcheId]
@@ -164,7 +166,7 @@ def shootmap_visualisations():
     ON [s].[matcheId] = [m].[matcheId]
     WHERE CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'"""
 
-    shootmap_data = get_query_result(query_get_shootmap_data, conn, cursor)
+    shootmap_data = get_query_result(query_get_shootmap_data, cursor)
     columns = [col[0] for col in cursor.description]
     data = [{col: val for col, val in zip(columns, row)} for row in shootmap_data]
     df_shootmap = pd.DataFrame(data, columns=columns)
@@ -191,7 +193,6 @@ def shootmap_visualisations():
 def pizzachart_visualisations():
     """Function to display the pizzachart visualisations in the Streamlit app"""
     col1, col2, col3 = st.columns(3)
-    conn = get_conn()
     get_kpis_query = """SELECT TOP(1) goals-(penaltiesTaken*penaltyConversion)/100 as [Non penalty Goal]
       ,[totalTackle]
       ,[errorLeadToAShot]
@@ -268,10 +269,10 @@ def pizzachart_visualisations():
       ,[scoringFrequency]
       ,[goalKicks]
   FROM [dim].[FactPlayerStatistics]"""
-    cursor = get_cursor(conn)
-    kpis_data = get_query_result(get_kpis_query, conn, cursor)
+    cursor = get_cursor(CONN)
+    kpis_data = get_query_result(get_kpis_query, cursor)
     columns = [col[0] for col in cursor.description]
-    team_names = get_teams_list(conn, cursor)
+    team_names = get_teams_list(cursor)
     if "uuid_team" not in st.session_state:
         st.session_state.uuid_team = str(
             uuid.uuid4()
@@ -288,7 +289,7 @@ def pizzachart_visualisations():
     with col1:
         team_pizza = team_selectbox(team_names, uuid=st.session_state.uuid_team)
 
-    player_names = get_players_list(team_pizza, conn, cursor)
+    player_names = get_players_list(team_pizza, cursor)
     with col2:
         player_pizza = player_selectbox(player_names, uuid=st.session_state.uuid_player)
 
@@ -379,8 +380,8 @@ def pizzachart_visualisations():
   JOIN [dim].[AxePlayer] p ON [p].[PlayerId]=[s].[playerId] 
   JOIN [dim].[AxeTeam] t ON [t].[teamIdInterne]=[p].[teamId]
   WHERE [p].[playerName]='{str(player_pizza)}'"""
-    cursor = get_cursor(conn)
-    pizzachart_data = get_query_result(get_player_stats_query, conn, cursor)
+    cursor = get_cursor(CONN)
+    pizzachart_data = get_query_result(get_player_stats_query, cursor)
     columns_pizza = [col[0] for col in cursor.description]
     data = [
         {col: val for col, val in zip(columns_pizza, row)} for row in pizzachart_data
@@ -419,12 +420,11 @@ def pizzachart_visualisations():
 
 def heatmap_visualisations():
     col1, col2 = st.columns(2)
-    conn = get_conn()
-    cursor = get_cursor(conn)
-    team_list = get_teams_list(conn, cursor)
+    cursor = get_cursor(CONN)
+    team_list = get_teams_list(cursor)
     with col1:
         team = st.selectbox("Shoose a Team", team_list, key="team")
-    players_list = get_players_list(team, conn, cursor)
+    players_list = get_players_list(team, cursor)
     with col2:
         player = st.selectbox("Shoose a Player", players_list, key="player")
     get_heatmap_data_query = f"""SELECT [heatMapId]
@@ -435,8 +435,8 @@ def heatmap_visualisations():
         FROM [dim].[FactHeatMap] h
         JOIN [dim].[AxePlayer] p ON [h].[playerId]=[p].[PlayerId]
         WHERE [p].[playerName]='{player}'"""
-    cursor = get_cursor(conn)
-    heatmap_data = get_query_result(get_heatmap_data_query, conn, cursor)
+    cursor = get_cursor(CONN)
+    heatmap_data = get_query_result(get_heatmap_data_query, cursor)
     columns = [col[0] for col in cursor.description]
     data = [{col: val for col, val in zip(columns, row)} for row in heatmap_data]
     df_heatmap = pd.DataFrame(data, columns=columns)
