@@ -10,6 +10,7 @@ from data.azure_data_extraction import get_conn, get_cursor, get_query_result
 from charts.shootmap import ShootMap
 from charts.pizzachart import Pizzachart
 from charts.heatmap import Heatmap
+from charts.shot_goal_location import ShotGoalLocation
 import pandas as pd
 from data_processing.shootmap_processor import ShootmapProcessor
 import random
@@ -20,9 +21,14 @@ from mplsoccer import (
 import logging
 import datetime
 from PIL import Image
+# TODO: add Season Filter in all the queries
+# TODO: Isolate all queries results in a separate file
+try:
+    # Make connection with Azure Database
+    CONN = get_conn()
+except Exception as e:
+    print("Error in establishing connection with Azure Database:", str(e))
 
-# Make connection with Azure Database
-CONN = get_conn()
 
 try:
     now = datetime.datetime.now()
@@ -63,6 +69,7 @@ def kpis_multiselect(kpis_list, uuid):
 
 
 def get_teams_list(cursor):
+    # TODO: get teams by season: ADD SEASON FILTER
     query_get_teams = """SELECT [teamId]
                 ,[teamIdInterne]
                 ,[teamName]
@@ -71,42 +78,47 @@ def get_teams_list(cursor):
             FROM [dim].[AxeTeam]"""
     teams = get_query_result(query_get_teams, cursor)
     # get Team names
-    team_names = tuple([team[2] for team in teams])
+    team_names = [team[2] for team in teams]
     return team_names
 
+def get_seasons_list(cursor):
+    query_get_seasons = """SELECT [seasonYear]
+    FROM [dim].[AxeTournament]
+    WHERE [seasonName] LIKE '%Botola%'"""
+    seasons = get_query_result(query_get_seasons, cursor)
+    seasons_names = tuple([season[0] for season in seasons])
+    return seasons_names
 
-def get_players_list(team_name: str, cursor):
+def get_all_players_list(cursor):
     query_get_players = f"""SELECT [teamName]
                 ,[playerName]
             FROM [dim].[AxePlayer] p JOIN [dim].[AxeTeam] t 
-            ON p.teamId = t.teamIdInterne 
-            WHERE t.teamName = '{str(team_name)}'"""
+            ON p.teamId = t.teamIdInterne"""
     players = get_query_result(query_get_players, cursor)
     # get Team names
-    player_names = tuple([player[1] for player in players])
+    player_names = [{"player_name": player[1], "team_name": player[0]} for player in players]
     return player_names
 
+
+def get_players_list(team_name: str):
+    player_list = [player["player_name"] for player in PLAYERS_LIST if player["team_name"] == team_name]
+    return player_list
+
+
+# Get Teams list
+cursor = get_cursor(CONN)
+TEAMS_LIST = get_teams_list(cursor)
+PLAYERS_LIST = get_all_players_list(cursor)
+SEASONS_LIST = get_seasons_list(cursor)
 
 def shootmap_visualisations():
     """Function to display the shootmap visualisations in the Streamlit app"""
     col1, col2, col3, col4 = st.columns(4)
     cursor = get_cursor(CONN)
-    query_get_seasons = """SELECT [seasonYear]
-    FROM [dim].[AxeTournament]
-    WHERE [seasonName] LIKE '%Botola%'"""
-    seasons = get_query_result(query_get_seasons, cursor)
-    season_names = tuple([season[0] for season in seasons])
+    season_names = SEASONS_LIST
     with col1:
         season = st.selectbox("Shoose a Season", season_names, key="season")
-
-    query_get_teams = """SELECT [teamId]
-            ,[teamIdInterne]
-            ,[teamName]
-            ,[teamNameCode]
-            ,[teamShortName]
-        FROM [dim].[AxeTeam]"""
-    teams = get_query_result(query_get_teams, cursor)
-    team_names = tuple([team[2] for team in teams])
+    team_names = TEAMS_LIST
     with col2:
         team_shootmap = st.selectbox("Shoose a Team", team_names, key="team_shootmap")
     cursor = get_cursor(CONN)
@@ -289,7 +301,7 @@ def pizzachart_visualisations():
     with col1:
         team_pizza = team_selectbox(team_names, uuid=st.session_state.uuid_team)
 
-    player_names = get_players_list(team_pizza, cursor)
+    player_names = get_players_list(team_pizza)
     with col2:
         player_pizza = player_selectbox(player_names, uuid=st.session_state.uuid_player)
 
@@ -297,11 +309,6 @@ def pizzachart_visualisations():
         kpis_list = kpis_multiselect(columns, uuid=st.session_state.uuid_kpis)
 
     get_player_stats_query = f"""SELECT goals-(penaltiesTaken*penaltyConversion)/100 as [Non penalty Goal]
-      ,[playerStatisticsId]
-      ,[s].[playerId]
-      ,[p].[playerName]
-      ,[t].[teamName]
-      ,[tournamentId]
       ,[totalTackle]
       ,[errorLeadToAShot]
       ,[possessionLostCtrl]
@@ -380,23 +387,112 @@ def pizzachart_visualisations():
   JOIN [dim].[AxePlayer] p ON [p].[PlayerId]=[s].[playerId] 
   JOIN [dim].[AxeTeam] t ON [t].[teamIdInterne]=[p].[teamId]
   WHERE [p].[playerName]='{str(player_pizza)}'"""
+    get_max_stats_query  ="""SELECT MAX((goals-(penaltiesTaken*penaltyConversion)/100)) AS [Non penalty Goal]
+      ,MAX([totalTackle]) AS [totalTackle]
+      ,MAX([errorLeadToAShot]) AS [errorLeadToAShot]
+      ,MAX([possessionLostCtrl]) AS [possessionLostCtrl]
+      ,MAX([outfielderBlock]) AS [outfielderBlock]
+      ,MAX([totalClearance]) AS [totalClearance]
+      ,MAX([expectedAssists]) AS [expectedAssists]
+      ,MAX([expectedGoals]) AS [expectedGoals]
+      ,MAX([rating]) AS [rating]
+      ,MAX([minutesPlayed]) AS [minutesPlayed]
+      ,MAX([totalOffside]) AS [totalOffside]
+      ,MAX([totalfouls]) AS [totalfouls]
+      ,MAX([wasFouled]) AS [wasFouled]
+      ,MAX([ownGoals]) AS [ownGoals]
+      ,MAX([goals]) AS [goals]
+      ,MAX([onTargetScoringAttempt]) AS [onTargetScoringAttempt]
+      ,MAX([shotOffTarget]) AS [shotOffTarget]
+      ,MAX([bigChanceCreated]) AS [bigChanceCreated]
+      ,MAX([wonContest]) AS [wonContest]
+      ,MAX([totalContest]) AS [totalContest]
+      ,MAX([dispossessed]) AS [dispossessed]
+      ,MAX([challengeLost]) AS [challengeLost]
+      ,MAX([duelWon]) AS [duelWon]
+      ,MAX([duelLost]) AS [duelLost]
+      ,MAX([aerialWon]) AS [aerialWon]
+      ,MAX([aerialLost]) AS [aerialLost]
+      ,MAX([touches]) AS [touches]
+      ,MAX([accurateCross]) AS [accurateCross]
+      ,MAX([totalCross]) AS [totalCross]
+      ,MAX([goalAssist]) AS [goalAssist]
+      ,MAX([penaltyWon]) AS [penaltyWon]
+      ,MAX([accurateKeeperSweeper]) AS [accurateKeeperSweeper]
+      ,MAX([totalKeeperSweeper]) AS [totalKeeperSweeper]
+      ,MAX([savedShotsFromInsideTheBox]) AS [savedShotsFromInsideTheBox]
+      ,MAX([goodHighClaim]) AS [goodHighClaim]
+      ,MAX([aerialDuelsWonPercentage]) AS [aerialDuelsWonPercentage]
+      ,MAX([aerialDuelsWon]) AS [aerialDuelsWon]
+      ,MAX([totalDuelsWonPercentage]) AS [totalDuelsWonPercentage]
+      ,MAX([ballRecovery]) AS [ballRecovery]
+      ,MAX([interceptions]) AS [interceptions]
+      ,MAX([accurateCrossesPercentage]) AS [accurateCrossesPercentage]
+      ,MAX([accurateFinalThirdPasses]) AS [accurateFinalThirdPasses]
+      ,MAX([accurateLongBalls]) AS [accurateLongBalls]
+      ,MAX([accurateLongBallsPercentage]) AS [accurateLongBallsPercentage]
+      ,MAX([accuratePasses]) AS [accuratePasses]
+      ,MAX([accuratePassesPercentage]) AS [accuratePassesPercentage]
+      ,MAX([appearances]) AS [appearances]
+      ,MAX([inaccuratePasses]) AS [inaccuratePasses]
+      ,MAX([totalPasses]) AS [totalPasses]
+      ,MAX([keyPasses]) AS [keyPasses]
+      ,MAX([successfulDribbles]) AS [successfulDribbles]
+      ,MAX([successfulDribblesPercentage]) AS [successfulDribblesPercentage]
+      ,MAX([yellowCards]) AS [yellowCards]
+      ,MAX([redCards]) AS [yellowCards]
+      ,MAX([directRedCards]) AS [directRedCards]
+      ,MAX([totalShots]) AS [totalShots]
+      ,MAX([shotsOnTarget]) AS [shotsOnTarget]
+      ,MAX([shotsOffTarget]) AS [shotsOffTarget]
+      ,MAX([blockedShots]) AS [blockedShots]
+      ,MAX([goalConversionPercentage]) AS [goalConversionPercentage]
+      ,MAX([penaltiesTaken]) AS [penaltiesTaken]
+      ,MAX([shotFromSetPiece]) AS [shotFromSetPiece]
+      ,MAX([clearances]) AS [clearances]
+      ,MAX([dribbledPast]) AS [dribbledPast]
+      ,MAX([offsides]) AS [offsides]
+      ,MAX([passToAssist]) AS [passToAssist]
+      ,MAX([saves]) AS [saves]
+      ,MAX([cleanSheet]) AS [cleanSheet]
+      ,MAX([crossesNotClaimed]) AS [crossesNotClaimed]
+      ,MAX([matchesStarted]) AS [matchesStarted]
+      ,MAX([penaltyConversion]) AS [penaltyConversion]
+      ,MAX([attemptPenaltyMiss]) AS [attemptPenaltyMiss]
+      ,MAX([goalsConceded]) AS [goalsConceded]
+      ,MAX([scoringFrequency]) AS [scoringFrequency]
+      ,MAX([goalKicks]) AS [goalKicks]
+  FROM [dim].[FactPlayerStatistics] s 
+  JOIN [dim].[AxePlayer] p ON [p].[PlayerId]=[s].[playerId] 
+  JOIN [dim].[AxeTeam] t ON [t].[teamIdInterne]=[p].[teamId]"""
+    # player stats
     cursor = get_cursor(CONN)
     pizzachart_data = get_query_result(get_player_stats_query, cursor)
     columns_pizza = [col[0] for col in cursor.description]
     data = [
         {col: val for col, val in zip(columns_pizza, row)} for row in pizzachart_data
     ]
-    print("data: ", data)
     df_pizzachart = pd.DataFrame(data, columns=columns_pizza).reset_index(drop=True)
+    # maximum stats
+    cursor = get_cursor(CONN)
+    max_pizzachart_data = get_query_result(get_max_stats_query, cursor)
+    max_columns_pizza = [col[0] for col in cursor.description]
+    max_data = [
+        {col: val for col, val in zip(columns_pizza, row)} for row in max_pizzachart_data
+    ]
+    df_max_pizzachart = pd.DataFrame(max_data, columns=max_columns_pizza).reset_index(drop=True)
     if df_pizzachart.empty:
         no_data_message(message="No data available for this player")
         return
     df_pizzachart = df_pizzachart[kpis_list]
+    df_max_pizzachart = df_max_pizzachart[kpis_list]
     categories = list(df_pizzachart.columns)
     group_1 = list(df_pizzachart.values[0])
     min_range = [0] * len(group_1)
-    new_list = [x / 4 for x in df_pizzachart.max().tolist()]
-    max_range = [x + y for x, y in zip(df_pizzachart.max().tolist(), new_list)]
+    new_list = [x / 4 for x in df_max_pizzachart.max().tolist()]
+    max_range = list(df_max_pizzachart.values[0])
+    print("max_range: ",df_max_pizzachart)
+    print("group_1: ",df_pizzachart)
     nb_cat = len(categories)
     list_colors = ["#FE4844", "#30E5D0", "#9726E0"]
     slice_colors = list_colors * (nb_cat // 3) + list_colors[: nb_cat % 3]
@@ -421,10 +517,10 @@ def pizzachart_visualisations():
 def heatmap_visualisations():
     col1, col2 = st.columns(2)
     cursor = get_cursor(CONN)
-    team_list = get_teams_list(cursor)
+    team_list = TEAMS_LIST
     with col1:
         team = st.selectbox("Shoose a Team", team_list, key="team")
-    players_list = get_players_list(team, cursor)
+    players_list = get_players_list(team)
     with col2:
         player = st.selectbox("Shoose a Player", players_list, key="player")
     get_heatmap_data_query = f"""SELECT [heatMapId]
@@ -449,6 +545,40 @@ def heatmap_visualisations():
     save_fig(fig=fig, file_name="Heatmap.png")
 
 
+def goal_location_visualisations():
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        team_list=["RCA", "WAC"]
+        team = st.selectbox("Shoose a Team", team_list, key="team_53")
+    
+    with col2:
+        player_list=["Achraf Dari", "Mohamed Ounajem"]
+        player = st.selectbox("Shoose a Player", player_list, key="player_53")
+    
+    with col3:
+        match_list=["RCA - WAC"]
+        match = st.selectbox("Shoose a Match", match_list, key="match_53")
+    
+    with col4:
+        color = st.color_picker("Color", "#00f900")
+    data=[
+        {"goalMouthY": 41.5, "goalMouthZ": 50.2, "shotType": "miss", "xg": 0.1915},
+        {"goalMouthY": 46.9, "goalMouthZ": 23.2, "shotType": "save", "xg": 0.03237},
+        {"goalMouthY": 58.2, "goalMouthZ": 40.5, "shotType": "miss", "xg": 0.09457},
+        {"goalMouthY": 46.4, "goalMouthZ": 8.8, "shotType": "goal", "xg": 0.2122},
+        {"goalMouthY": 47.6, "goalMouthZ": 33.3, "shotType": "goal", "xg": 0.82},
+        {"goalMouthY": 49, "goalMouthZ": 19.2, "shotType": "save", "xg": 0.1178},
+    ]
+    if data is None:
+        no_data_message(message="No data available for this player")
+        return
+    shot_goal_location = ShotGoalLocation(data=data, color=color)
+    fig, ax = shot_goal_location.draw()
+    st.pyplot(fig)
+    save_fig(fig=fig, file_name="ShotGoalLocation.png")
+    
+
 def main():
     left_co, cent_co, last_co = st.columns(3)
     script_dir = os.path.dirname(__file__)
@@ -456,20 +586,12 @@ def main():
     with cent_co:
         image = Image.open(image_path)
         st.image(image, width=150)
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
-        ["Heatmap", "Shootmap", "Pizzachart", "Radarchart", "Stackedbar"]
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+        ["Heatmap", "Shootmap", "Pizzachart", "Radarchart", "Stackedbar", "Goal Location"]
     )
     with tab1:
         st.header("Heatmap Visualization")
         heatmap_visualisations()
-
-        # # Create a mplsoccer pitch instance
-        # pitch = Pitch()
-        # fig, ax = pitch.draw(figsize=(8, 4))
-        # # Display the pitch
-        # st.pyplot(fig)
-        # # Save figure to a BytesIO object
-        # save_fig(fig=fig, file_name="Heatmap.png")
 
     with tab2:
         st.header("Shootmap Visualization")
@@ -485,6 +607,10 @@ def main():
     with tab5:
         st.header("Stackedbar")
 
-
+    with tab6:
+        st.header("Goal Location")
+        goal_location_visualisations()
+    
+    
 if __name__ == "__main__":
     main()
