@@ -9,12 +9,12 @@ class ShotGoalLocation:
         self,
         color: str = "#62FF81",
         data: list[dict] = [
-            {"goalMouthY": 41.5, "goalMouthZ": 50.2, "shotType": "miss", "xg": 0.1915},
-            {"goalMouthY": 46.9, "goalMouthZ": 23.2, "shotType": "save", "xg": 0.03237},
-            {"goalMouthY": 58.2, "goalMouthZ": 40.5, "shotType": "miss", "xg": 0.09457},
-            {"goalMouthY": 46.4, "goalMouthZ": 8.8, "shotType": "goal", "xg": 0.2122},
-            {"goalMouthY": 47.6, "goalMouthZ": 33.3, "shotType": "goal", "xg": 0.82},
-            {"goalMouthY": 49, "goalMouthZ": 19.2, "shotType": "save", "xg": 0.1178},
+            {"GoalMouthCoordinatesY": 41.5, "GoalMouthCoordinatesZ": 50.2, "shotType": "miss", "xg": 0.1915},
+            {"GoalMouthCoordinatesY": 46.9, "GoalMouthCoordinatesZ": 23.2, "shotType": "save", "xg": 0.03237},
+            {"GoalMouthCoordinatesY": 58.2, "GoalMouthCoordinatesZ": 40.5, "shotType": "miss", "xg": 0.09457},
+            {"GoalMouthCoordinatesY": 46.4, "GoalMouthCoordinatesZ": 8.8, "shotType": "goal", "xg": 0.2122},
+            {"GoalMouthCoordinatesY": 47.6, "GoalMouthCoordinatesZ": 33.3, "shotType": "goal", "xg": 0.82},
+            {"GoalMouthCoordinatesY": 49, "GoalMouthCoordinatesZ": 19.2, "shotType": "save", "xg": 0.1178},
         ],
     ):
         self.data = data
@@ -141,7 +141,7 @@ class ShotGoalLocation:
             label="Goal" if p["shotType"]=="goal" else "No Goal"
             color = self.color if p["shotType"]=="goal" else "none"
             edge_color = "none" if p["shotType"]=="goal" else self.edge_color
-            goal[idx].scatter(p['goalMouthY'], p['goalMouthZ'], c=color, s=scale, label=label, edgecolors=edge_color, linewidths=0.9)
+            goal[idx].scatter(p['GoalMouthCoordinatesY'], p['GoalMouthCoordinatesZ'], c=color, s=scale, label=label, edgecolors=edge_color, linewidths=0.9)
 
         # Add twitter logo
         ax = fig.add_axes([0.92, 0.025, 0.04, 0.04])
