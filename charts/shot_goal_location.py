@@ -7,20 +7,14 @@ import numpy as np
 class ShotGoalLocation:
     def __init__(
         self,
+        data: list[dict],
+        player_type: str = "player",
         color: str = "#62FF81",
-        data: list[dict] = [
-            {"GoalMouthCoordinatesY": 41.5, "GoalMouthCoordinatesZ": 50.2, "shotType": "miss", "xg": 0.1915},
-            {"GoalMouthCoordinatesY": 46.9, "GoalMouthCoordinatesZ": 23.2, "shotType": "save", "xg": 0.03237},
-            {"GoalMouthCoordinatesY": 58.2, "GoalMouthCoordinatesZ": 40.5, "shotType": "miss", "xg": 0.09457},
-            {"GoalMouthCoordinatesY": 46.4, "GoalMouthCoordinatesZ": 8.8, "shotType": "goal", "xg": 0.2122},
-            {"GoalMouthCoordinatesY": 47.6, "GoalMouthCoordinatesZ": 33.3, "shotType": "goal", "xg": 0.82},
-            {"GoalMouthCoordinatesY": 49, "GoalMouthCoordinatesZ": 19.2, "shotType": "save", "xg": 0.1178},
-        ],
     ):
         self.data = data
         self.color= color
         self.edge_color= color
-        # self.label_c = {"goal": "#62FF81", "miss": "#FF4C4C", "save":"#FFE946", "block":"#4684FF"}
+        self.player_type = player_type
 
     def draw(self):
         """Draw the shot goal location chart
@@ -137,16 +131,22 @@ class ShotGoalLocation:
 
         for p in pen:
             # goal[idx].plot([50,pen['goalMouthY']], [-40, pen['goalMouthZ']], 'w', ls = 'dashed', zorder=3, lw = 0.5)
-            scale = 300*p["xg"]
-            label="Goal" if p["shotType"]=="goal" else "No Goal"
-            color = self.color if p["shotType"]=="goal" else "none"
-            edge_color = "none" if p["shotType"]=="goal" else self.edge_color
+            if self.player_type=="player":
+                scale = 300*p["xg"]
+                label="Goal" if p["shotType"]=="goal" else "No Goal"
+                color = self.color if p["shotType"]=="goal" else "none"
+                edge_color = "none" if p["shotType"]=="goal" else self.edge_color
+            elif self.player_type=="goal_keeper":
+                scale = 300*p["xg"]
+                label="Save" if p["shotType"]=="save" else "Goal"
+                color = self.color if p["shotType"]=="save" else "none"
+                edge_color = "none" if p["shotType"]=="save" else self.edge_color
             goal[idx].scatter(p['GoalMouthCoordinatesY'], p['GoalMouthCoordinatesZ'], c=color, s=scale, label=label, edgecolors=edge_color, linewidths=0.9)
 
         # Add twitter logo
         ax = fig.add_axes([0.92, 0.025, 0.04, 0.04])
         ax.axis("off")
-        plt.show()
+        # plt.show()
         # badge = Image.open('..\..\data_directory\misc_data\images\JK Twitter Logo.png')
         # ax.imshow(badge)
         # fig.savefig(f"player_penalty_takers/{title_str.replace(' ','_')}-{year_str}-top-penalty-takers", dpi=300)

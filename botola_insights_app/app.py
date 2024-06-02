@@ -49,11 +49,11 @@ random.seed(42)
 
 
 # Add parent directory to Python path
-def save_fig(fig, file_name):
+def save_fig(fig, file_name, key: str):
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=300, bbox_inches="tight", transparent=True)
     buf.seek(0)
-    st.download_button("Download", buf, file_name=file_name, mime="image/png")
+    st.download_button("Download", buf, file_name=file_name, mime="image/png", key=key)
 
 
 def no_data_message(message: str):
@@ -89,7 +89,8 @@ def get_all_teams_list(cursor):
     return team_names
 
 
-def get_seasons_list(cursor):
+def get_seasons_list(cursor)->tuple:
+    """Get all seasons list from the database"""
     query_get_seasons = """SELECT [seasonYear]
     FROM [dim].[AxeTournament]
     WHERE [seasonName] LIKE '%Botola%'"""
@@ -101,25 +102,51 @@ def get_seasons_list(cursor):
 def get_all_players_list(cursor):
     query_get_players = f"""SELECT [teamName]
                 ,[playerName]
+                ,[position]
             FROM [dim].[AxePlayer] p JOIN [dim].[AxeTeam] t 
             ON p.teamId = t.teamIdInterne"""
     players = get_query_result(query_get_players, cursor)
     # get Team names
     player_names = [
-        {"player_name": player[1], "team_name": player[0]} for player in players
+        {"player_name": player[1], "position": player[2],"team_name": player[0]} for player in players
     ]
     return player_names
 
 
-def get_players_list(team_name: str):
-    player_list = [
-        player["player_name"]
-        for player in PLAYERS_LIST
-        if player["team_name"] == team_name
-    ]
+def get_players_list(team_name: str, position: str = None):
+    if position:
+        player_list = [
+            player["player_name"]
+            for player in PLAYERS_LIST
+            if player["team_name"] == team_name and player["position"] == position
+        ]
+        print("player_list: ", player_list)
+    else:
+        player_list = [
+            player["player_name"]
+            for player in PLAYERS_LIST
+            if player["team_name"] == team_name
+        ]
     return player_list
 
+def get_players_by_match(match: str, position:str, cursor):
+    query_get_players = f"""SELECT DISTINCT([p].[playerName])
+                        FROM [dim].[AxeLineUps] [l]
+                        JOIN [dim].[AxePlayer] p ON [l].[PlayerId]=[p].[PlayerId]
+                        JOIN [dim].[AxeMatche] m ON [m].[matcheId]=[l].[matcheId]
+                        WHERE [l].[substitute]=0
+                        AND [p].[position]='{position}'
+            AND CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'"""
+    cursor = get_cursor(CONN)
+    players = get_query_result(query_get_players, cursor)
+    # get Team names
+    player_names = [
+        player[0] for player in players
+    ]
+    return player_names
 
+def get_teams_by_season(season: str):
+    pass
 def get_all_matches_list(cursor):
     query_get_matches = f"""
                 SELECT [matcheId],
@@ -144,7 +171,16 @@ def get_all_matches_list(cursor):
     return matches_names
 
 
-def get_matches_list(team: str, season: str):
+def get_matches_list(team: str, season: str)->list:
+    """Get Matches list by team and season
+
+    Args:
+        team (str): _description_
+        season (str): _description_
+
+    Returns:
+        list: _description_
+    """
     matches_list = [
         match["match_name"]
         for match in MATCHES_LIST
@@ -211,6 +247,194 @@ def get_shootmap_data(match: str, player: str, cursor):
     shootmap_data = get_query_result(query_get_shootmap_data, cursor)
     return shootmap_data
 
+def get_stackbarchart_data(match: str, cursor):
+    """Get Stacked Bar Chart Data
+
+    Args:
+        match (str): _description_
+        cursor (_type_): _description_
+    """
+    # "Ball possession",
+    #         "Expected goals",
+    #         "Total shots",
+    #         "Shots on target",
+    #         "Shots off target",
+    #         "Blocked shots",
+    query_stackedbar = f"""SELECT [t].[teamName]
+                , CASE WHEN [m].[homeName] = [t].[teamName] THEN 'YES' ELSE 'NO' END AS [isHome]
+                ,[Ball_possession]
+                ,[Expected_goals]
+                ,[Total_shots]
+                ,[Shots_on_target]
+                ,[Shots_off_target]
+                ,[Blocked_shots]
+                FROM [dim].[FactMatcheStats] ms
+                JOIN [dim].[AxeMatche] m ON [m].[matcheId]=[ms].[matcheId]
+                JOIN [dim].[AxeTeam] t ON [t].[teamId]=[ms].[teamId]
+                WHERE CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'"""
+    stackedbar_data = get_query_result(query_stackedbar, cursor)
+    return stackedbar_data
+
+
+def get_opponent_shootmap_data(match: str, player: str, cursor):
+    if player:
+        query_get_shootmap_data = f"""SELECT [p].[playerName] as GoalKeeperName
+       ,[p2].[playerName]
+       ,[m].[matcheId]
+       ,CONCAT([m].[homeName], ' - ', [m].[awayName]) as matchName
+      ,[EndY]
+      ,[EndX]
+      ,[xgot]
+      ,[goalType]
+      ,[xg]
+      ,[timeSeconds]
+      ,[time]
+      ,[shotType]
+      ,[reversedPeriodTime]
+      ,[DrawId]
+      ,[goalMouthLocation]
+      ,[bodyPart]
+      ,[DatumAddedTime]
+      ,[BlockCoordinatesZ]
+      ,[BlockCoordinatesY]
+      ,[BlockCoordinatesX]
+      ,[StartY]
+      ,[StartX]
+      ,[PlayerCoordinatesZ]
+      ,[PlayerCoordinatesY]
+      ,[PlayerCoordinatesX]
+      ,[BlockY]
+      ,[GoalMouthCoordinatesY]
+      ,[addedTime]
+      ,[GoalMouthCoordinatesZ]
+      ,[GoalMouthCoordinatesX]
+      ,[BlockX]
+      ,[isHome]
+  FROM [dim].[AxeLineUps] l 
+  JOIN [dim].[AxeMatche] m ON [l].[matcheId]=[m].[matcheId]
+  JOIN [dim].[FactShotMap] s ON [s].[matcheId]=[m].[matcheId]
+  JOIN [dim].[AxePlayer] p2 on [p2].[PlayerId]=[s].[PlayerId]
+  JOIN [dim].[AxePlayer] p on [p].[PlayerId]=[l].[PlayerId]
+  WHERE [p].[position] = 'G'
+  AND [p].[teamId]=[p2].[teamId]
+  AND [l].[substitute]=0
+  AND CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'
+  AND [p].[playerName]!='{player}'"""
+    else:
+        query_get_shootmap_data = f"""
+            SELECT [PlayerId]
+        ,[s].[matcheId]
+        ,CONCAT([m].[homeName], ' - ', [m].[awayName]) as matchName
+        ,[isHome]
+        ,[xgot]
+        ,[time]
+        ,[goalType]
+        ,[xg]
+        ,[shotType]
+        ,[goalMouthLocation]
+        ,[bodyPart]
+        ,[StartY]
+        ,[StartX]
+        ,[PlayerCoordinatesZ]
+        ,[PlayerCoordinatesY]
+        ,[PlayerCoordinatesX]
+        ,[GoalMouthCoordinatesZ]
+        ,[GoalMouthCoordinatesX]
+        ,[GoalMouthCoordinatesY]
+    FROM [dim].[FactShotMap] s JOIN [dim].[AxeMatche] m
+    ON [s].[matcheId] = [m].[matcheId]
+    WHERE CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'"""
+    shootmap_data = get_query_result(query_get_shootmap_data, cursor)
+    return shootmap_data
+
+
+def get_shootmap_data_goalkeeper(match: str, player: str, cursor):
+    if player:
+        query_get_shootmap_data = f"""SELECT [p].[playerName] as GoalKeeperName
+                        ,[m].[matcheId]
+                        ,CONCAT([m].[homeName], ' - ', [m].[awayName]) as matchName
+                        ,[EndY]
+                        ,[EndX]
+                        ,[xgot]
+                        ,[goalType]
+                        ,[xg]
+                        ,[timeSeconds]
+                        ,[time]
+                        ,[shotType]
+                        ,[reversedPeriodTime]
+                        ,[DrawId]
+                        ,[goalMouthLocation]
+                        ,[bodyPart]
+                        ,[DatumAddedTime]
+                        ,[BlockCoordinatesZ]
+                        ,[BlockCoordinatesY]
+                        ,[BlockCoordinatesX]
+                        ,[StartY]
+                        ,[StartX]
+                        ,[PlayerCoordinatesZ]
+                        ,[PlayerCoordinatesY]
+                        ,[PlayerCoordinatesX]
+                        ,[BlockY]
+                        ,[GoalMouthCoordinatesY]
+                        ,[addedTime]
+                        ,[GoalMouthCoordinatesZ]
+                        ,[GoalMouthCoordinatesX]
+                        ,[BlockX]
+                        ,[isHome]
+                    FROM [dim].[AxeLineUps] l 
+                    JOIN [dim].[AxeMatche] m ON [l].[matcheId]=[m].[matcheId]
+                    JOIN [dim].[FactShotMap] s ON [s].[matcheId]=[m].[matcheId]
+                    JOIN [dim].[AxePlayer] p on [p].[PlayerId]=[l].[PlayerId]
+                    WHERE [p].[position] = 'G' 
+                    WHERE CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'
+                    AND [p].[PlayerName] LIKE '%{player}%'"""
+    else:
+        query_get_shootmap_data = f"""
+            SELECT [p].[playerName] as GoalKeeperName
+                        ,[m].[matcheId]
+                        ,CONCAT([m].[homeName], ' - ', [m].[awayName]) as matchName
+                        ,[EndY]
+                        ,[EndX]
+                        ,[xgot]
+                        ,[goalType]
+                        ,[xg]
+                        ,[timeSeconds]
+                        ,[time]
+                        ,[shotType]
+                        ,[reversedPeriodTime]
+                        ,[DrawId]
+                        ,[goalMouthLocation]
+                        ,[bodyPart]
+                        ,[DatumAddedTime]
+                        ,[BlockCoordinatesZ]
+                        ,[BlockCoordinatesY]
+                        ,[BlockCoordinatesX]
+                        ,[StartY]
+                        ,[StartX]
+                        ,[PlayerCoordinatesZ]
+                        ,[PlayerCoordinatesY]
+                        ,[PlayerCoordinatesX]
+                        ,[BlockY]
+                        ,[GoalMouthCoordinatesY]
+                        ,[addedTime]
+                        ,[GoalMouthCoordinatesZ]
+                        ,[GoalMouthCoordinatesX]
+                        ,[BlockX]
+                        ,[isHome]
+                    FROM [dim].[AxeLineUps] l 
+                    JOIN [dim].[AxeMatche] m ON [l].[matcheId]=[m].[matcheId]
+                    JOIN [dim].[FactShotMap] s ON [s].[matcheId]=[m].[matcheId]
+                    JOIN [dim].[AxePlayer] p on [p].[PlayerId]=[l].[PlayerId]
+                    WHERE [p].[position] = 'G' 
+                    WHERE CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'"""
+    shootmap_data = get_query_result(query_get_shootmap_data, cursor)
+    return shootmap_data
+
+
+# def get_teams_by_season(season: str):
+
+#     return team_names
+
 
 # Get Teams list
 cursor = get_cursor(CONN)
@@ -260,7 +484,7 @@ def shootmap_visualisations():
     )
     fig, ax = pitch.draw_v2(save_figure=False, show_figure=False)
     st.pyplot(fig)
-    save_fig(fig=fig, file_name="Shootmap.png")
+    save_fig(fig=fig, file_name="Shootmap.png", key="shootmap")
 
 
 def pizzachart_visualisations():
@@ -575,7 +799,7 @@ def pizzachart_visualisations():
     )
     fig, ax = pizza.draw()
     st.pyplot(fig)
-    save_fig(fig=fig, file_name="Pizzachart.png")
+    save_fig(fig=fig, file_name="Pizzachart.png", key="pizzachart")
 
 
 def heatmap_visualisations():
@@ -606,10 +830,13 @@ def heatmap_visualisations():
     pitch = Heatmap(data=df_heatmap, pitch=VerticalPitch)
     fig, ax = pitch.draw()
     st.pyplot(fig)
-    save_fig(fig=fig, file_name="Heatmap.png")
+    save_fig(fig=fig, file_name="Heatmap.png", key="heatmap")
 
 
 def goal_location_visualisations():
+    
+    team, match = None, None
+    # Players shots location
     col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
@@ -622,7 +849,9 @@ def goal_location_visualisations():
 
     with col3:
         players_list = get_players_list(team)
-        player = st.selectbox("Shoose a Player", ["None"] + players_list, key="player_53")
+        player = st.selectbox(
+            "Shoose a Player", ["None"] + players_list, key="player_53"
+        )
 
     with col4:
         matches_list = get_matches_list(team=team, season=season)
@@ -630,37 +859,123 @@ def goal_location_visualisations():
 
     with col5:
         color = st.color_picker("Color", "#00f900")
-    columns_to_keep = ["GoalMouthCoordinatesY", "GoalMouthCoordinatesZ", "shotType", "xg"]
-    player_value = player if player!="None" else None
+    columns_to_keep = [
+        "GoalMouthCoordinatesY",
+        "GoalMouthCoordinatesZ",
+        "shotType",
+        "xg",
+    ]
+    player_value = player if player != "None" else None
     shootmap_data = get_shootmap_data(match=match, player=player_value, cursor=cursor)
     columns = [col[0] for col in cursor.description]
     data = [{col: val for col, val in zip(columns, row)} for row in shootmap_data]
     df_goal_location = pd.DataFrame(data, columns=columns_to_keep)
-    df_goal_location["GoalMouthCoordinatesY"] = df_goal_location["GoalMouthCoordinatesY"].astype(float)
-    df_goal_location["GoalMouthCoordinatesZ"] = df_goal_location["GoalMouthCoordinatesZ"].astype(float)
+    df_goal_location["GoalMouthCoordinatesY"] = df_goal_location[
+        "GoalMouthCoordinatesY"
+    ].astype(float)
+    df_goal_location["GoalMouthCoordinatesZ"] = df_goal_location[
+        "GoalMouthCoordinatesZ"
+    ].astype(float)
     df_goal_location["xg"] = df_goal_location["xg"].astype(float)
     df_goal_location["shotType"] = df_goal_location["shotType"].astype(str)
     print(df_goal_location)
     if df_goal_location.empty:
         no_data_message(message="No data available for this match")
-        return
-    shot_goal_location = ShotGoalLocation(data=df_goal_location.to_records(), color=color)
+        return (team, match) if(team is not None) and (match is not None) else ("Default", "Default")
+
+    shot_goal_location = ShotGoalLocation(
+        data=df_goal_location.to_records(), color=color
+    )
     fig, ax = shot_goal_location.draw()
     st.pyplot(fig)
-    save_fig(fig=fig, file_name="ShotGoalLocation.png")
+    save_fig(fig=fig, file_name="ShotGoalLocation.png", key="goal_location")
+    return (team, match) if(team is not None) and (match is not None) else ("Default", "Default")
 
 
-def goal_keeper_vizualisations():
-    pass
+def goal_keeper_vizualisations(match, team):
+    col1, col2= st.columns(2)
+
+    with col1:
+        players_list = get_players_by_match(match=match, position="G", cursor=cursor)
+        player = st.selectbox(
+            "Shoose a Goalkeeper", ["None"] + players_list, key="player_gk"
+        )
+
+    with col2:
+        color = st.color_picker("Color", "#00f900", key="color_gk")
+        
+    columns_to_keep = [
+        "GoalMouthCoordinatesY",
+        "GoalMouthCoordinatesZ",
+        "shotType",
+        "xg",
+    ]
+    player_value = player if player != "None" else None
+    shootmap_data = get_opponent_shootmap_data(match=match, player=player_value, cursor=cursor)
+    columns = [col[0] for col in cursor.description]
+    data = [{col: val for col, val in zip(columns, row)} for row in shootmap_data]
+    df_goal_location = pd.DataFrame(data, columns=columns_to_keep)
+    df_goal_location["GoalMouthCoordinatesY"] = df_goal_location[
+        "GoalMouthCoordinatesY"
+    ].astype(float)
+    df_goal_location["GoalMouthCoordinatesZ"] = df_goal_location[
+        "GoalMouthCoordinatesZ"
+    ].astype(float)
+    df_goal_location["xg"] = df_goal_location["xg"].astype(float)
+    df_goal_location["shotType"] = df_goal_location["shotType"].astype(str)
+    df_goal_location = df_goal_location.loc[df_goal_location["shotType"].isin(['save', 'goal'])]
+    if df_goal_location.empty:
+        no_data_message(message="No data available for this match")
+        return
+    shot_goal_location = ShotGoalLocation(
+        data=df_goal_location.to_records(), color=color, player_type="goal_keeper"
+    )
+    fig, ax = shot_goal_location.draw()
+    st.pyplot(fig)
+    save_fig(fig=fig, file_name="GoalKeeperShots.png", key="goal_keeper")
+    
 
 
 def stacked_barchart_vizualisations():
+    col1, col2, col3, col4, col5 = st.columns(5)
+
+    with col1:
+        col_team1 = st.color_picker("Color", "#00f900", key="col_team1")
+        col_team2 = st.color_picker("Color", "#000990", key="col_team2")
+        
+    with col2:
+        season = st.selectbox("Shoose Season", SEASONS_LIST, key="season_sbr")
+
+    with col3:
+        team = st.selectbox("Shoose a Team", TEAMS_LIST, key="team_sbr")
+
+    with col4:
+        match = st.selectbox(
+            "Shoose a Match",
+            get_matches_list(season=season, team=team),
+            key="match_sbr",
+        )
+
+    stacked_data = get_stackbarchart_data(match=match, cursor=cursor)
+    columns = [col[0] for col in cursor.description]
+    data = [{col: val for col, val in zip(columns, row)} for row in stacked_data]
+    df_stacked = pd.DataFrame(data, columns=columns)
+    if df_stacked.empty:
+        no_data_message(message="No data available for this match")
+        return
+    home_data = list(df_stacked.loc[df_stacked["isHome"]=="YES"].to_records()[0])[3:]
+    away_data = list(df_stacked.loc[df_stacked["isHome"]=="NO"].to_records()[0])[3:]
+    home_data = [float(home_data[_]) if _==1 else int(home_data[_]) for _ in range(len(home_data))]
+    away_data = [float(home_data[_]) if _==1 else int(away_data[_]) for _ in range(len(away_data))]
+    
+    
+
     data = {
-        "home": [1.42, 50, 16, 7, 7, 2],
-        "away": [1.86, 50, 17, 6, 5, 5],
+        "home": home_data,
+        "away": away_data,
         "itemName": [
-            "Expected goals",
             "Ball possession",
+            "Expected goals",
             "Total shots",
             "Shots on target",
             "Shots off target",
@@ -674,11 +989,16 @@ def stacked_barchart_vizualisations():
     total_values = [home + away for home, away in zip(home_values, away_values)]
     proportions = [(home, away) for home, away in zip(home_values, away_values)]
     stackedbarchart = StackedBarChart(
-        data=data, total_values=total_values, proportions=proportions
+        data=data,
+        total_values=total_values,
+        proportions=proportions,
+        home_c=col_team1,
+        away_c=col_team2,
     )
     fig, ax = stackedbarchart.draw(show_figure=False, save_figure=False)
     st.pyplot(fig)
-    save_fig(fig=fig, file_name="StackedBarChart.png")
+    save_fig(fig=fig, file_name="StackedBarChart.png", key="stackedbar")
+
 
 def main():
     left_co, cent_co, last_co = st.columns(3)
@@ -718,7 +1038,8 @@ def main():
 
     with tab6:
         st.header("Goal Location")
-        goal_location_visualisations()
+        (team, match) = goal_location_visualisations()
+        goal_keeper_vizualisations(team=team, match=match)
 
 
 if __name__ == "__main__":
