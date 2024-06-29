@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib import patheffects
 from matplotlib.font_manager import FontProperties
 from datetime import datetime
+import os
 
 
 class StackedBarChart:
@@ -22,7 +23,8 @@ class StackedBarChart:
         self.proportions = proportions
         self.fig, self.ax = plt.subplots(figsize=figsize)
         self.y_pos = 0
-        font_path = "./fonts/Roboto-Medium.ttf"
+        ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+        font_path = os.path.abspath(os.path.dirname(ROOT_DIR)+"/fonts/Roboto-Medium.ttf")
         self.roboto = FontProperties(fname=font_path)
         self.home_c = home_c
         self.away_c = away_c
@@ -135,6 +137,7 @@ class StackedBarChart:
             )
         if show_figure:
             plt.show()
+        return self.fig, self.ax
 
 
 if __name__ == "__main__":
