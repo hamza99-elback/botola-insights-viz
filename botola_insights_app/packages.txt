@@ -1,1 +1,2 @@
-msodbcsql18
+msodbcsql17
+mssql-tools
