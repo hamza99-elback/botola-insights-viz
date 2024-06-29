@@ -3,29 +3,63 @@ import pyodbc, struct
 
 from typing import Union
 from dotenv import load_dotenv
+import logging
 
 # Load .env file
 load_dotenv()
 
-# Now you can access the variables using os.getenv
-connection_string = os.getenv("CONNECTION_STRING_READ_ONLY")
-
-connection_string = connection_string
-
-
 
 def get_conn():
-    conn = pyodbc.connect(connection_string)
+    """Make a connection to the database using the connection string from the .env file
+
+    Returns:
+        _type_: _description_
+    """
+    conn=None   
+    try:
+        connection_string = os.getenv("CONNECTION_STRING_READ_ONLY_DRIVER_18")
+        conn = pyodbc.connect(connection_string)
+    except Exception as e:
+        logging.error(f"Error while connecting to the database, try using string connection for ODBC 18: {e}")
+        connection_string = os.getenv("CONNECTION_STRING_READ_ONLY_DRIVER_17")
+        conn = pyodbc.connect(connection_string)
+    # else:
+    #     logging.error(f"Error while connecting to the database")
     return conn
 
 def get_cursor(conn):
-    cursor = conn.cursor()
-    return cursor
+    """Get a cursor from the connection
 
-def get_query_result(query: str, conn: pyodbc.Connection, cursor: pyodbc.Cursor) -> Union[list, None]:
-    cursor.execute(query)
-    result = cursor.fetchall()
-    return result
+    Args:
+        conn (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    try:
+        cursor = conn.cursor()
+        return cursor
+    except Exception as e:
+        logging.error(f"Error while getting cursor: {e}")
+        return None
+
+def get_query_result(query: str, cursor: pyodbc.Cursor) -> Union[list, None]:
+    """Get the result of a query
+
+    Args:
+        query (str): _description_
+        cursor (pyodbc.Cursor): _description_
+
+    Returns:
+        Union[list, None]: _description_
+    """
+    try:
+        cursor.execute(query)
+        result = cursor.fetchall()
+        return result
+    except Exception as e:
+        logging.error(f"Error while executing query: {e}")
+        return None
 
 if __name__=="__main__":
     conn = get_conn()
