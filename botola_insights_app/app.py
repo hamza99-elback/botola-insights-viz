@@ -78,9 +78,9 @@ def kpis_multiselect(kpis_list, uuid):
 def get_all_teams_list(cursor):
     # TODO: get teams by season: ADD SEASON FILTER
     query_get_teams = """SELECT [teamId]
-                ,[teamIdInterne]
+                ,[apiTeamId]
                 ,[teamName]
-                ,[teamNameCode]
+                ,[teamSlug]
                 ,[teamShortName]
             FROM [dim].[AxeTeam]"""
     teams = get_query_result(query_get_teams, cursor)
@@ -827,6 +827,7 @@ def heatmap_visualisations():
     if df_heatmap.empty:
         no_data_message(message="No data available for this player")
         return
+    print("heatmap data: ", df_heatmap)
     pitch = Heatmap(data=df_heatmap, pitch=VerticalPitch)
     fig, ax = pitch.draw()
     st.pyplot(fig)
@@ -1019,7 +1020,7 @@ def main():
     )
     with tab1:
         st.header("Heatmap Visualization")
-        heatmap_visualisations()
+        # heatmap_visualisations()
 
     with tab2:
         st.header("Shootmap Visualization")

@@ -9,6 +9,12 @@ from mplsoccer import (
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
+
+
+import sys
+import os
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(project_root)
 from tools.json_tool import JsonTool
 from data_processing.shootmap_processor import ShootmapProcessor
 
@@ -57,7 +63,7 @@ class ShootMap:
                         fontsize=12, ax=self.ax)
         sc = self.pitch.scatter(self.data["playerCoordinates.x"], self.data["playerCoordinates.y"],
                         # size varies between 100 and 1000 (points squared)
-                        s=(self.data["xg"] * 900) + 100,
+                        s=(self.data["xg"] * 1000) + 100,
                         c='#b94b75',  # color for scatter in hex format
                         edgecolors='#383838',  # give the markers a charcoal border
                         # for other markers types see: https://matplotlib.org/api/markers_api.html
@@ -102,11 +108,19 @@ class ShootMap:
             plt.show()
         return self.fig, self.ax
 
-if __name__=="__main__":
-    json_tool = JsonTool(path="./data/shootmap_data.json")
+if __name__ == "__main__":
+    json_tool = JsonTool(path="./data/wac_irt_shotmap.json")
     data = json_tool.get_data()
-    shootmap_processor = ShootmapProcessor(data=data)
+    # df_shootmap = pd.DataFrame(data['shotmap'])
+    # df_shootmap = pd.read_excel("./data/rca_rsb_shootmap.xlsx")
+    shootmap_processor = ShootmapProcessor(data=data['shotmap'])
     df_team1, df_team2 = shootmap_processor.process_data()
-    pitch = ShootMap(df_team1=df_team1, df_team2=df_team2, pitch=Pitch, team1_c="", team2_c="")
-    pitch.draw_shootmap_v2(save_figure=True)
-    print(data)
+    pitch = ShootMap(
+        df_team1=df_team1,
+        df_team2=df_team2,
+        pitch=Pitch,
+        team1_c="#E51B1D",
+        team2_c="#26A3B6",
+    )
+    fig, ax = pitch.draw_v2(save_figure=True, show_figure=True)
+    # print(df_shootmap)
