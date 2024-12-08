@@ -28,23 +28,31 @@ class Heatmap:
         goal_type="box",
         goal_alpha=0.8,
         pitch_type="opta",
-        figsize=(10, 8),
-        pitch_color='#F7F7F7'
+        figsize=(6, 10),
+        pitch_color='#FFFFFF'
     ):
         self.pitch = pitch(
             pad_bottom=pad_bottom,
             half=half,
             goal_type=goal_type,
             goal_alpha=goal_alpha,
-            # pitch_type=pitch_type,
+            # pitch_type='custom', 
+            # pitch_length=120,
+            # pitch_width=80
         )
+        self.figsize=figsize
         self.pitch_color = pitch_color
-        self.fig, self.ax = self.pitch.draw(figsize=figsize)
+        # self.fig, self.ax = self.pitch.draw(figsize=figsize)
         self.data = data
+        if 'count' not in self.data.columns:
+            self.data['count'] = 1
+            
         
     def draw_v2(self, save_figure:bool=False, show_figure:bool=False):
         pearl_earring_cmap_100 = LinearSegmentedColormap.from_list("Pearl Earring - 100 colors", ['#F7F7F7', '#C384FF','#00FFD4', '#FBFF00', '#FE5202'], N=80) # ['#F7F7F7', '#C384FF','#00FFD4', '#FBFF00', '#FE5202']
         pitch = VerticalPitch(line_color='#7E7E7E', line_zorder=2, pitch_color=self.pitch_color, pad_bottom=0, pad_left=0, pad_right=0, pad_top=0)
+        self.fig, self.ax = pitch.draw(figsize=self.figsize)
+        
         kdeplot = pitch.kdeplot(self.data.x, self.data.y, ax=self.ax, cmap=pearl_earring_cmap_100, fill=True, levels=100, zorder=-1, thresh=.01, weights=self.data['count'], multiple="stack")
         if show_figure:
             plt.show()
@@ -55,23 +63,24 @@ class Heatmap:
         return self.fig, self.ax
 
     def draw(self, save_figure:bool=False, show_figure:bool=False):
-        pearl_earring_cmap_100 = LinearSegmentedColormap.from_list("Pearl Earring - 100 colors", ['none', '#FBFF00', '#FE5202'], N=80) # ['#F7F7F7', '#C384FF','#00FFD4', '#FBFF00', '#FE5202']
-        pitch = VerticalPitch(line_color='#7E7E7E', line_zorder=2, pitch_color=self.pitch_color, pad_bottom=0, pad_left=0, pad_right=0, pad_top=0)
-        bin_statistic = pitch.bin_statistic(self.data.x, self.data.y, statistic='count', bins=(50, 50), values=self.data['count'])
-        bin_statistic['statistic'] = gaussian_filter(bin_statistic['statistic'], 1)
+        pearl_earring_cmap_100 = LinearSegmentedColormap.from_list("Pearl Earring - 100 colors", ['none','#C384FF','#00FFD4', '#FBFF00', '#FE5202'], N=100) # ['#F7F7F7', '#C384FF','#00FFD4', '#FBFF00', '#FE5202']
+        pitch = VerticalPitch(line_color='#7E7E7E', line_zorder=2, pitch_color=self.pitch_color, pad_bottom=0, pad_left=0, pad_right=0, pad_top=0, pitch_type='custom', pitch_length=100, pitch_width=100)
+        self.fig, self.ax = pitch.draw(figsize=self.figsize)
+        bin_statistic = pitch.bin_statistic(self.data.x, self.data.y, statistic='count', bins=(100, 100), values=self.data['count'])
+        bin_statistic['statistic'] = gaussian_filter(bin_statistic['statistic'], 4)
         pcm = pitch.heatmap(bin_statistic, ax=self.ax, cmap=pearl_earring_cmap_100, edgecolors='none', zorder=-1, alpha=1)
         if show_figure:
             plt.show()
         if save_figure:
             current_datetime = datetime.now()
             formatted_datetime = current_datetime.strftime("%d-%m-%y_%H-%M-%S")
-            plt.savefig(f'./images/heatmap/heatmap_{str(formatted_datetime)}.png', dpi=300, bbox_inches='tight', transparent=True)
+            self.fig.savefig(f'./images/heatmap/heatmap_{str(formatted_datetime)}.png', dpi=300, bbox_inches='tight', transparent=True)
         return self.fig, self.ax
     
 if __name__=="__main__":
-    json_tool = JsonTool(path="./data/heatmap_data.json")
+    json_tool = JsonTool(path="./data/khairi_heatmap.json")
     data = json_tool.get_data()
-    df_heatmap = pd.DataFrame(data['points'])
+    df_heatmap = pd.DataFrame(data['heatmap'])
     pitch = Heatmap(data=df_heatmap, pitch=VerticalPitch)
-    pitch.draw_v2(show_figure=True)
+    pitch.draw(show_figure=True, save_figure=True)
     print(data)

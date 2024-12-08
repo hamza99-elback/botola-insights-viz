@@ -7,9 +7,9 @@ class ShootmapProcessor:
         self.reverse = reverse
         self.isHome = isHome
         self.columns_to_keep = [
-            "PlayerId",
-            "matcheId",
-            "matchName",
+            # "PlayerId",
+            # "matcheId",
+            # "matchName",
             "isHome",
             "xgot",
             "goalType",
@@ -37,7 +37,22 @@ class ShootmapProcessor:
         # Convert the dictionary to a DataFrame
         # df = pd.json_normalize(self.data["shotmap"])
         # Display the DataFrame
-        df = self.data
+        if isinstance(self.data, list):
+            df = pd.json_normalize(self.data)
+            df.rename(columns={
+                "playerCoordinates.x": "PlayerCoordinatesX",
+                "playerCoordinates.y": "PlayerCoordinatesY",
+                "playerCoordinates.z": "PlayerCoordinatesZ",
+                "goalMouthCoordinates.x": "GoalMouthCoordinatesX",
+                "goalMouthCoordinates.y": "GoalMouthCoordinatesY",
+                "goalMouthCoordinates.z": "GoalMouthCoordinatesZ",
+                "blockCoordinates.x": "BlockCoordinatesX",
+                "blockCoordinates.y": "BlockCoordinatesY",
+                "blockCoordinates.z": "BlockCoordinatesZ",
+                    }, inplace=True)
+        else:
+            df = self.data
+            
         if self.isHome:
             df = df[df["isHome"] == self.isHome]
         df.loc[df["time"] <= 45, "Half"] = "First"

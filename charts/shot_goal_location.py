@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patch
 import matplotlib.cm as cm
 import numpy as np
+import pandas as pd
+from datetime import datetime
+
 
 
 class ShotGoalLocation:
@@ -132,12 +135,12 @@ class ShotGoalLocation:
         for p in pen:
             # goal[idx].plot([50,pen['goalMouthY']], [-40, pen['goalMouthZ']], 'w', ls = 'dashed', zorder=3, lw = 0.5)
             if self.player_type=="player":
-                scale = 300*p["xg"]
+                scale = 1000*p["xg"]
                 label="Goal" if p["shotType"]=="goal" else "No Goal"
                 color = self.color if p["shotType"]=="goal" else "none"
                 edge_color = "none" if p["shotType"]=="goal" else self.edge_color
             elif self.player_type=="goal_keeper":
-                scale = 300*p["xg"]
+                scale = 1000*p["xg"]
                 label="Save" if p["shotType"]=="save" else "Goal"
                 color = self.color if p["shotType"]=="save" else "none"
                 edge_color = "none" if p["shotType"]=="save" else self.edge_color
@@ -149,18 +152,32 @@ class ShotGoalLocation:
         # plt.show()
         # badge = Image.open('..\..\data_directory\misc_data\images\JK Twitter Logo.png')
         # ax.imshow(badge)
-        # fig.savefig(f"player_penalty_takers/{title_str.replace(' ','_')}-{year_str}-top-penalty-takers", dpi=300)
+        current_datetime = datetime.now()
+        formatted_datetime = current_datetime.strftime("%d-%m-%y_%H-%M-%S")
+        plt.savefig(f'./images/goal_location/shots_{str(formatted_datetime)}.png', dpi=300, bbox_inches='tight', transparent=True)
         return fig, ax
 
 
-# if __name__ == "__main__":
-#     data = [
-#             {"goalMouthY": 41.5, "goalMouthZ": 50.2, "shotType": "miss", "xg": 0.1915},
-#             {"goalMouthY": 46.9, "goalMouthZ": 23.2, "shotType": "save", "xg": 0.03237},
-#             {"goalMouthY": 58.2, "goalMouthZ": 40.5, "shotType": "miss", "xg": 0.09457},
-#             {"goalMouthY": 46.4, "goalMouthZ": 8.8, "shotType": "goal", "xg": 0.2122},
-#             {"goalMouthY": 47.6, "goalMouthZ": 33.3, "shotType": "goal", "xg": 0.82},
-#             {"goalMouthY": 49, "goalMouthZ": 19.2, "shotType": "save", "xg": 0.1178},
-#         ]
-#     shot_goal_location = ShotGoalLocation(data=data)
-#     shot_goal_location.draw()
+if __name__ == "__main__":
+    data = pd.read_excel("./data/wac_mas_shootmap.xlsx")
+    columns_to_keep = [
+        "GoalMouthCoordinatesY",
+        "GoalMouthCoordinatesZ",
+        "shotType",
+        "xg",
+    ]
+    df_goal_location = data[columns_to_keep]
+    df_goal_location["GoalMouthCoordinatesY"] = df_goal_location[
+        "GoalMouthCoordinatesY"
+    ].astype(float)
+    df_goal_location["GoalMouthCoordinatesZ"] = df_goal_location[
+        "GoalMouthCoordinatesZ"
+    ].astype(float)
+    df_goal_location["xg"] = df_goal_location["xg"].astype(float)
+    df_goal_location["shotType"] = df_goal_location["shotType"].astype(str)
+    df_goal_location = df_goal_location.loc[df_goal_location["shotType"].isin(['save', 'goal'])]
+    shot_goal_location = ShotGoalLocation(
+        data=df_goal_location.to_records(), color='yellow',  player_type="goal_keeper"
+    )
+    fig, ax = shot_goal_location.draw()
+    print(data)

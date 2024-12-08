@@ -1,0 +1,992 @@
+{
+    "shotmap": [
+        {
+            "player": {
+                "name": "Hamza El Janati",
+                "firstName": "Hamza El Janati",
+                "lastName": "",
+                "slug": "hamza-el-janati",
+                "shortName": "H. E. Janati",
+                "position": "M",
+                "jerseyNumber": "21",
+                "userCount": 42,
+                "id": 1140945
+            },
+            "isHome": true,
+            "shotType": "miss",
+            "situation": "free-kick",
+            "playerCoordinates": {
+                "x": 30,
+                "y": 35,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "close-left",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 58.6,
+                "z": 5.1
+            },
+            "xg": 0.000485,
+            "id": 3693969,
+            "time": 90,
+            "addedTime": 14,
+            "timeSeconds": 6231,
+            "draw": {
+                "start": {
+                    "x": 35,
+                    "y": 30
+                },
+                "end": {
+                    "x": 41.4,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 41.4,
+                    "y": 94.9
+                }
+            },
+            "reversedPeriodTime": 1,
+            "reversedPeriodTimeSeconds": 69,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Ismail Moutaraji",
+                "firstName": "Ismail Moutaraji",
+                "lastName": "",
+                "slug": "ismail-moutaraji",
+                "shortName": "I. Moutaraji",
+                "position": "M",
+                "jerseyNumber": "18",
+                "userCount": 174,
+                "id": 1140870
+            },
+            "isHome": false,
+            "shotType": "save",
+            "situation": "regular",
+            "playerCoordinates": {
+                "x": 13,
+                "y": 67,
+                "z": 0
+            },
+            "bodyPart": "left-foot",
+            "goalMouthLocation": "low-right",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 45.5,
+                "z": 6.2
+            },
+            "xg": 0.08542,
+            "xgot": 0.1649,
+            "id": 3693966,
+            "time": 90,
+            "addedTime": 11,
+            "timeSeconds": 6005,
+            "draw": {
+                "start": {
+                    "x": 67,
+                    "y": 13
+                },
+                "end": {
+                    "x": 54.5,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 54.5,
+                    "y": 93.8
+                }
+            },
+            "reversedPeriodTime": 1,
+            "reversedPeriodTimeSeconds": 295,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Cassius Mailula",
+                "firstName": "",
+                "lastName": "",
+                "slug": "cassius-mailula",
+                "shortName": "C. Mailula",
+                "position": "F",
+                "jerseyNumber": "21",
+                "userCount": 873,
+                "id": 1398858,
+                "fieldTranslations": {
+                    "nameTranslation": {
+                        "ar": "\u0643\u0627\u0633\u064a\u0648\u0633 \u0645\u064a\u0644\u0648\u0644\u0627"
+                    },
+                    "shortNameTranslation": {
+                        "ar": "\u0643. \u0645\u064a\u0644\u0648\u0644\u0627"
+                    }
+                }
+            },
+            "isHome": false,
+            "shotType": "save",
+            "situation": "throw-in-set-piece",
+            "playerCoordinates": {
+                "x": 7,
+                "y": 45,
+                "z": 0
+            },
+            "bodyPart": "head",
+            "goalMouthLocation": "low-right",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 45.4,
+                "z": 7.2
+            },
+            "xg": 0.1215,
+            "xgot": 0.7887,
+            "id": 3693965,
+            "time": 90,
+            "addedTime": 7,
+            "timeSeconds": 5815,
+            "draw": {
+                "start": {
+                    "x": 45,
+                    "y": 7
+                },
+                "end": {
+                    "x": 54.6,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 54.6,
+                    "y": 92.8
+                }
+            },
+            "reversedPeriodTime": 1,
+            "reversedPeriodTimeSeconds": 485,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Mohamed Moufid",
+                "firstName": "Mohamed Moufid",
+                "lastName": "",
+                "slug": "mohamed-moufid",
+                "shortName": "M. Moufid",
+                "position": "D",
+                "jerseyNumber": "29",
+                "userCount": 99,
+                "id": 1140872
+            },
+            "isHome": false,
+            "shotType": "save",
+            "situation": "regular",
+            "playerCoordinates": {
+                "x": 12,
+                "y": 66,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "low-right",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 46.8,
+                "z": 15.5
+            },
+            "xg": 0.2162,
+            "xgot": 0.262,
+            "id": 3693964,
+            "time": 90,
+            "addedTime": 7,
+            "timeSeconds": 5762,
+            "draw": {
+                "start": {
+                    "x": 66,
+                    "y": 12
+                },
+                "end": {
+                    "x": 53.2,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 53.2,
+                    "y": 84.5
+                }
+            },
+            "reversedPeriodTime": 1,
+            "reversedPeriodTimeSeconds": 538,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Hamza El Janati",
+                "firstName": "Hamza El Janati",
+                "lastName": "",
+                "slug": "hamza-el-janati",
+                "shortName": "H. E. Janati",
+                "position": "M",
+                "jerseyNumber": "21",
+                "userCount": 42,
+                "id": 1140945
+            },
+            "isHome": true,
+            "shotType": "goal",
+            "goalType": "penalty",
+            "situation": "penalty",
+            "playerCoordinates": {
+                "x": 10,
+                "y": 50,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "high-centre",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 50.1,
+                "z": 23.8
+            },
+            "xg": 0.76,
+            "xgot": 0.81,
+            "id": 3693967,
+            "time": 90,
+            "addedTime": 4,
+            "timeSeconds": 5635,
+            "draw": {
+                "start": {
+                    "x": 50,
+                    "y": 10
+                },
+                "end": {
+                    "x": 49.9,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 49.9,
+                    "y": 76.2
+                }
+            },
+            "reversedPeriodTime": 1,
+            "reversedPeriodTimeSeconds": 665,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Walid Nassi",
+                "firstName": "",
+                "lastName": "",
+                "slug": "walid-nassi",
+                "shortName": "W. Nassi",
+                "position": "M",
+                "jerseyNumber": "11",
+                "userCount": 101,
+                "id": 1210560
+            },
+            "isHome": false,
+            "shotType": "save",
+            "situation": "regular",
+            "playerCoordinates": {
+                "x": 2,
+                "y": 32,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "low-right",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 45.7,
+                "z": 1.2
+            },
+            "xg": 0.1022,
+            "xgot": 0.7222,
+            "id": 3693963,
+            "time": 81,
+            "timeSeconds": 4844,
+            "draw": {
+                "start": {
+                    "x": 32,
+                    "y": 2
+                },
+                "end": {
+                    "x": 54.3,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 54.3,
+                    "y": 98.8
+                }
+            },
+            "reversedPeriodTime": 10,
+            "reversedPeriodTimeSeconds": 556,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Cassius Mailula",
+                "firstName": "",
+                "lastName": "",
+                "slug": "cassius-mailula",
+                "shortName": "C. Mailula",
+                "position": "F",
+                "jerseyNumber": "21",
+                "userCount": 873,
+                "id": 1398858,
+                "fieldTranslations": {
+                    "nameTranslation": {
+                        "ar": "\u0643\u0627\u0633\u064a\u0648\u0633 \u0645\u064a\u0644\u0648\u0644\u0627"
+                    },
+                    "shortNameTranslation": {
+                        "ar": "\u0643. \u0645\u064a\u0644\u0648\u0644\u0627"
+                    }
+                }
+            },
+            "isHome": false,
+            "shotType": "save",
+            "situation": "corner",
+            "playerCoordinates": {
+                "x": 23,
+                "y": 66,
+                "z": 0
+            },
+            "bodyPart": "left-foot",
+            "goalMouthLocation": "low-centre",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 48.8,
+                "z": 5.7
+            },
+            "xg": 0.0322,
+            "xgot": 0.01185,
+            "id": 3693962,
+            "time": 74,
+            "timeSeconds": 4400,
+            "draw": {
+                "start": {
+                    "x": 66,
+                    "y": 23
+                },
+                "end": {
+                    "x": 51.2,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 51.2,
+                    "y": 94.3
+                }
+            },
+            "reversedPeriodTime": 17,
+            "reversedPeriodTimeSeconds": 1000,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Nassim Chadli",
+                "firstName": "",
+                "lastName": "",
+                "slug": "nassim-chadli",
+                "shortName": "N. Chadli",
+                "position": "M",
+                "jerseyNumber": "28",
+                "userCount": 469,
+                "id": 1003317,
+                "fieldTranslations": {
+                    "nameTranslation": {
+                        "ar": "\u0634\u0627\u062f\u0644\u064a, \u0646\u0633\u064a\u0645"
+                    },
+                    "shortNameTranslation": {
+                        "ar": "\u0646. \u0634\u0627\u062f\u0644\u064a"
+                    }
+                }
+            },
+            "isHome": false,
+            "shotType": "block",
+            "situation": "regular",
+            "playerCoordinates": {
+                "x": 28,
+                "y": 80,
+                "z": 0
+            },
+            "bodyPart": "left-foot",
+            "goalMouthLocation": "low-centre",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 50,
+                "z": 20
+            },
+            "blockCoordinates": {
+                "x": 28,
+                "y": 80,
+                "z": 0
+            },
+            "xg": 0.006568,
+            "id": 3693961,
+            "time": 73,
+            "timeSeconds": 4356,
+            "draw": {
+                "start": {
+                    "x": 80,
+                    "y": 28
+                },
+                "block": {
+                    "x": 80,
+                    "y": 28
+                },
+                "end": {
+                    "x": 50,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 50,
+                    "y": 80
+                }
+            },
+            "reversedPeriodTime": 18,
+            "reversedPeriodTimeSeconds": 1044,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Oussama Mahrous",
+                "firstName": "Oussama Mahrous",
+                "lastName": "",
+                "slug": "oussama-mahrous",
+                "shortName": "O. Mahrous",
+                "position": "M",
+                "jerseyNumber": "2",
+                "userCount": 129,
+                "id": 1140943
+            },
+            "isHome": false,
+            "shotType": "save",
+            "situation": "set-piece",
+            "playerCoordinates": {
+                "x": 12,
+                "y": 52,
+                "z": 0
+            },
+            "bodyPart": "head",
+            "goalMouthLocation": "high-right",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 46.5,
+                "z": 22.5
+            },
+            "xg": 0.1004,
+            "xgot": 0.3288,
+            "id": 3693960,
+            "time": 66,
+            "timeSeconds": 3946,
+            "draw": {
+                "start": {
+                    "x": 52,
+                    "y": 12
+                },
+                "end": {
+                    "x": 53.5,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 53.5,
+                    "y": 77.5
+                }
+            },
+            "reversedPeriodTime": 25,
+            "reversedPeriodTimeSeconds": 1454,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Hamza Sakhi",
+                "slug": "hamza-sakhi",
+                "shortName": "H. Sakhi",
+                "position": "M",
+                "jerseyNumber": "22",
+                "userCount": 667,
+                "id": 340547,
+                "fieldTranslations": {
+                    "nameTranslation": {
+                        "ar": "\u062d\u0645\u0632\u0629 \u0633\u0627\u062e\u064a"
+                    },
+                    "shortNameTranslation": {
+                        "ar": "\u062d. \u0633\u0627\u062e\u064a"
+                    }
+                }
+            },
+            "isHome": false,
+            "shotType": "miss",
+            "situation": "corner",
+            "playerCoordinates": {
+                "x": 20,
+                "y": 69,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "close-high-right",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 42.8,
+                "z": 56
+            },
+            "xg": 0.01211,
+            "id": 3693959,
+            "time": 59,
+            "timeSeconds": 3485,
+            "draw": {
+                "start": {
+                    "x": 69,
+                    "y": 20
+                },
+                "end": {
+                    "x": 57.2,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 57.2,
+                    "y": 44
+                }
+            },
+            "reversedPeriodTime": 32,
+            "reversedPeriodTimeSeconds": 1915,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Mouad Hmamouchi",
+                "slug": "mouad-hmamouchi",
+                "shortName": "M. Hmamouchi",
+                "jerseyNumber": "20",
+                "userCount": 8,
+                "id": 1500985
+            },
+            "isHome": true,
+            "shotType": "save",
+            "situation": "regular",
+            "playerCoordinates": {
+                "x": 38,
+                "y": 59,
+                "z": 0
+            },
+            "bodyPart": "left-foot",
+            "goalMouthLocation": "low-left",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 52.3,
+                "z": 10.1
+            },
+            "xg": 0.02639,
+            "xgot": 0.3319,
+            "id": 3693958,
+            "time": 54,
+            "timeSeconds": 3228,
+            "draw": {
+                "start": {
+                    "x": 59,
+                    "y": 38
+                },
+                "end": {
+                    "x": 47.7,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 47.7,
+                    "y": 89.9
+                }
+            },
+            "reversedPeriodTime": 37,
+            "reversedPeriodTimeSeconds": 2172,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Aounzou",
+                "slug": "aounzou",
+                "shortName": "Aounzou",
+                "position": "M",
+                "jerseyNumber": "20",
+                "userCount": 16,
+                "id": 1922475
+            },
+            "isHome": false,
+            "shotType": "miss",
+            "situation": "regular",
+            "playerCoordinates": {
+                "x": 4,
+                "y": 59,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "close-right",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 42.3,
+                "z": 28.5
+            },
+            "xg": 0.3193,
+            "id": 3693957,
+            "time": 51,
+            "timeSeconds": 3056,
+            "draw": {
+                "start": {
+                    "x": 59,
+                    "y": 4
+                },
+                "end": {
+                    "x": 57.7,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 57.7,
+                    "y": 71.5
+                }
+            },
+            "reversedPeriodTime": 40,
+            "reversedPeriodTimeSeconds": 2344,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Oussama Mahrous",
+                "firstName": "Oussama Mahrous",
+                "lastName": "",
+                "slug": "oussama-mahrous",
+                "shortName": "O. Mahrous",
+                "position": "M",
+                "jerseyNumber": "2",
+                "userCount": 129,
+                "id": 1140943
+            },
+            "isHome": false,
+            "shotType": "block",
+            "situation": "free-kick",
+            "playerCoordinates": {
+                "x": 25,
+                "y": 71,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "low-centre",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 50,
+                "z": 20
+            },
+            "blockCoordinates": {
+                "x": 25,
+                "y": 71,
+                "z": 0
+            },
+            "xg": 0.0004936,
+            "id": 3693968,
+            "time": 47,
+            "timeSeconds": 2774,
+            "draw": {
+                "start": {
+                    "x": 71,
+                    "y": 25
+                },
+                "block": {
+                    "x": 71,
+                    "y": 25
+                },
+                "end": {
+                    "x": 50,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 50,
+                    "y": 80
+                }
+            },
+            "reversedPeriodTime": 44,
+            "reversedPeriodTimeSeconds": 2626,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Mohamed Rayhi",
+                "slug": "mohamed-rayhi",
+                "shortName": "M. Rayhi",
+                "position": "M",
+                "jerseyNumber": "10",
+                "userCount": 143,
+                "id": 340511
+            },
+            "isHome": false,
+            "shotType": "post",
+            "situation": "regular",
+            "playerCoordinates": {
+                "x": 13,
+                "y": 39,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "right",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 45,
+                "z": 17.5
+            },
+            "xg": 0.1567,
+            "id": 3693956,
+            "time": 47,
+            "timeSeconds": 2819,
+            "draw": {
+                "start": {
+                    "x": 39,
+                    "y": 13
+                },
+                "end": {
+                    "x": 55,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 55,
+                    "y": 82.5
+                }
+            },
+            "reversedPeriodTime": 44,
+            "reversedPeriodTimeSeconds": 2581,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Mohamed Rayhi",
+                "slug": "mohamed-rayhi",
+                "shortName": "M. Rayhi",
+                "position": "M",
+                "jerseyNumber": "10",
+                "userCount": 143,
+                "id": 340511
+            },
+            "isHome": false,
+            "shotType": "block",
+            "situation": "regular",
+            "playerCoordinates": {
+                "x": 18,
+                "y": 21,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "low-centre",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 50,
+                "z": 20
+            },
+            "blockCoordinates": {
+                "x": 18,
+                "y": 21,
+                "z": 0
+            },
+            "xg": 0.005189,
+            "id": 3693955,
+            "time": 47,
+            "timeSeconds": 2798,
+            "draw": {
+                "start": {
+                    "x": 21,
+                    "y": 18
+                },
+                "block": {
+                    "x": 21,
+                    "y": 18
+                },
+                "end": {
+                    "x": 50,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 50,
+                    "y": 80
+                }
+            },
+            "reversedPeriodTime": 44,
+            "reversedPeriodTimeSeconds": 2602,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Chouaib Faidi",
+                "firstName": "Chouaib Faidi",
+                "slug": "chouaib-faidi",
+                "shortName": "C. Faidi",
+                "position": "M",
+                "jerseyNumber": "9",
+                "userCount": 96,
+                "id": 1140933
+            },
+            "isHome": false,
+            "shotType": "miss",
+            "situation": "regular",
+            "playerCoordinates": {
+                "x": 3,
+                "y": 62,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "close-high",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 45.4,
+                "z": 48.9
+            },
+            "xg": 0.1276,
+            "id": 3693954,
+            "time": 43,
+            "timeSeconds": 2538,
+            "draw": {
+                "start": {
+                    "x": 62,
+                    "y": 3
+                },
+                "end": {
+                    "x": 54.6,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 54.6,
+                    "y": 51.1
+                }
+            },
+            "reversedPeriodTime": 3,
+            "reversedPeriodTimeSeconds": 162,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Nabil Marmouk",
+                "firstName": "Nabil Marmouk",
+                "slug": "marmouk-nabil",
+                "shortName": "N. Marmouk",
+                "position": "D",
+                "jerseyNumber": "5",
+                "userCount": 118,
+                "id": 1140954
+            },
+            "isHome": false,
+            "shotType": "save",
+            "situation": "regular",
+            "playerCoordinates": {
+                "x": 27,
+                "y": 42,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "low-right",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 46.8,
+                "z": 7.1
+            },
+            "xg": 0.03388,
+            "xgot": 0.1244,
+            "id": 3693953,
+            "time": 24,
+            "timeSeconds": 1438,
+            "draw": {
+                "start": {
+                    "x": 42,
+                    "y": 27
+                },
+                "end": {
+                    "x": 53.2,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 53.2,
+                    "y": 92.9
+                }
+            },
+            "reversedPeriodTime": 22,
+            "reversedPeriodTimeSeconds": 1262,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Mohamed Rayhi",
+                "slug": "mohamed-rayhi",
+                "shortName": "M. Rayhi",
+                "position": "M",
+                "jerseyNumber": "10",
+                "userCount": 143,
+                "id": 340511
+            },
+            "isHome": false,
+            "shotType": "miss",
+            "situation": "regular",
+            "playerCoordinates": {
+                "x": 23,
+                "y": 20,
+                "z": 0
+            },
+            "bodyPart": "right-foot",
+            "goalMouthLocation": "close-high-left",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 58.1,
+                "z": 43.4
+            },
+            "xg": 0.01492,
+            "id": 3693952,
+            "time": 21,
+            "timeSeconds": 1212,
+            "draw": {
+                "start": {
+                    "x": 20,
+                    "y": 23
+                },
+                "end": {
+                    "x": 41.9,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 41.9,
+                    "y": 56.6
+                }
+            },
+            "reversedPeriodTime": 25,
+            "reversedPeriodTimeSeconds": 1488,
+            "incidentType": "shot"
+        },
+        {
+            "player": {
+                "name": "Saad Ait Khorsa",
+                "slug": "saad-ait-khorsa",
+                "shortName": "S. A. Khorsa",
+                "position": "D",
+                "jerseyNumber": "4",
+                "userCount": 19,
+                "id": 919474
+            },
+            "isHome": true,
+            "shotType": "miss",
+            "situation": "corner",
+            "playerCoordinates": {
+                "x": 2,
+                "y": 32,
+                "z": 0
+            },
+            "bodyPart": "left-foot",
+            "goalMouthLocation": "close-high-left",
+            "goalMouthCoordinates": {
+                "x": 0,
+                "y": 56.9,
+                "z": 52.7
+            },
+            "xg": 0.008867,
+            "id": 3693951,
+            "time": 17,
+            "timeSeconds": 972,
+            "draw": {
+                "start": {
+                    "x": 32,
+                    "y": 2
+                },
+                "end": {
+                    "x": 43.1,
+                    "y": 0
+                },
+                "goal": {
+                    "x": 43.1,
+                    "y": 47.3
+                }
+            },
+            "reversedPeriodTime": 29,
+            "reversedPeriodTimeSeconds": 1728,
+            "incidentType": "shot"
+        }
+    ]
+}
