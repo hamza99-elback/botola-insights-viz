@@ -92,19 +92,31 @@ def get_all_teams_list(cursor):
 def get_seasons_list(cursor)->tuple:
     """Get all seasons list from the database"""
     query_get_seasons = """SELECT [seasonYear]
-    FROM [dim].[AxeTournament]
+    FROM [dim].[AxeTournamentSeason]
     WHERE [seasonName] LIKE '%Botola%'"""
     seasons = get_query_result(query_get_seasons, cursor)
     seasons_names = tuple([season[0] for season in seasons])
     return seasons_names
 
 
+def get_seasons_list_by_competition(cursor, competition)->tuple:
+    """Get all seasons list from the database"""
+    query_get_seasons = f"""SELECT DISTINCT seasonYear
+            FROM [dim].[AxeTournamentSeason]
+            where name='{competition}'"""
+    seasons = get_query_result(query=query_get_seasons, cursor=cursor)
+    seasons_names = tuple([season[0] for season in seasons])
+    return seasons_names
+
+
+
 def get_all_players_list(cursor):
-    query_get_players = f"""SELECT [teamName]
+    query_get_players = f"""
+                SELECT DISTINCT [teamName]
                 ,[playerName]
-                ,[position]
-            FROM [dim].[AxePlayer] p JOIN [dim].[AxeTeam] t 
-            ON p.teamId = t.teamIdInterne"""
+                ,p.[position]
+            FROM [dim].[FactPlayerMatcheStats] ps JOIN [dim].[AxeTeam] t  ON ps.TeamId = t.TeamId
+			JOIN [dim].[AxePlayer] p ON ps.PlayerId=p.playerId;"""
     players = get_query_result(query_get_players, cursor)
     # get Team names
     player_names = [
@@ -120,7 +132,6 @@ def get_players_list(team_name: str, position: str = None):
             for player in PLAYERS_LIST
             if player["team_name"] == team_name and player["position"] == position
         ]
-        print("player_list: ", player_list)
     else:
         player_list = [
             player["player_name"]
@@ -131,12 +142,14 @@ def get_players_list(team_name: str, position: str = None):
 
 def get_players_by_match(match: str, position:str, cursor):
     query_get_players = f"""SELECT DISTINCT([p].[playerName])
-                        FROM [dim].[AxeLineUps] [l]
-                        JOIN [dim].[AxePlayer] p ON [l].[PlayerId]=[p].[PlayerId]
-                        JOIN [dim].[AxeMatche] m ON [m].[matcheId]=[l].[matcheId]
-                        WHERE [l].[substitute]=0
+                            FROM [dim].[FactPlayerMatcheStats] [pms]
+                            JOIN [dim].[AxePlayer] p ON [pms].[PlayerId]=[p].[PlayerId]
+                            JOIN [dim].[AxeMatche] m ON [m].[matcheId]=[pms].[matcheId]
+                            JOIN [dim].[AxeTeam] ht ON [ht].[TeamId]=[m].[HomeId]
+                            JOIN [dim].[AxeTeam] awt ON [awt].[TeamId]=[m].[AwayId]
+                            WHERE [pms].[substitute]=0
                         AND [p].[position]='{position}'
-            AND CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'"""
+            AND CONCAT([ht].[TeamShortName], ' - ', [awt].[TeamShortName]) = '{str(match.replace("'", "''"))}'"""
     cursor = get_cursor(CONN)
     players = get_query_result(query_get_players, cursor)
     # get Team names
@@ -147,16 +160,19 @@ def get_players_by_match(match: str, position:str, cursor):
 
 def get_teams_by_season(season: str):
     pass
+
 def get_all_matches_list(cursor):
     query_get_matches = f"""
                 SELECT [matcheId],
             [round],
-            [t].[seasonYear],
-            [homeName],
-            [awayName],
-            CONCAT([homeName], ' - ', [awayName]) as matchName
-        FROM [dim].[AxeMatche] m JOIN [dim].[AxeTournament] t 
-        ON [m].[tounamentIdInterne]=[t].[tournamentId]"""
+            [tr].[seasonYear],
+            [ht].[TeamName],
+            [awt].[TeamName],
+            CONCAT([ht].[TeamShortName], ' - ', [awt].[TeamShortName]) as matchName
+        FROM [dim].[AxeMatche] m JOIN [dim].[AxeTournamentSeason] tr 
+        ON [m].[MatcheId]=[tr].[TournamentSeasonId]
+		JOIN [dim].[AxeTeam] awt ON [awt].[TeamId]= [m].[AwayId]
+		JOIN [dim].[AxeTeam] ht ON [ht].[TeamId]= [m].[homeId]"""
     matches = get_query_result(query_get_matches, cursor)
     matches_names = [
         {
@@ -185,47 +201,25 @@ def get_matches_list(team: str, season: str)->list:
         match["match_name"]
         for match in MATCHES_LIST
         if team in (match["home_team"], match["away_team"])
-        and match["season"] == season
+        # and match["season"] == season
     ]
     return matches_list
 
 
+def get_competitions_list(cursor):
+    query_get_competitions = """SELECT DISTINCT name
+                        FROM [dim].[AxeTournamentSeason];"""
+    competitions = get_query_result(query_get_competitions, cursor)
+    # get competiotions names
+    competition_names = [competition[0] for competition in competitions]
+    return competition_names
+
 def get_shootmap_data(match: str, player: str, cursor):
     if player:
-        query_get_shootmap_data = f"""SELECT [p].[PlayerId]
-      ,[s].[matcheId]
-      ,CONCAT([m].[homeName], ' - ', [m].[awayName]) as matchName
-      ,[m].[homeName]
-      ,[p].[PlayerName]
-      ,[m].[awayName]
-      ,[isHome]
-      ,[xgot]
-      ,[time]
-      ,[goalType]
-      ,[xg]
-      ,[shotType]
-      ,[reversedPeriodTime]
-      ,[goalMouthLocation]
-      ,[bodyPart]
-      ,[BlockCoordinatesZ]
-      ,[BlockCoordinatesY]
-      ,[BlockCoordinatesX]
-      ,[PlayerCoordinatesZ]
-      ,[PlayerCoordinatesY]
-      ,[PlayerCoordinatesX]
-      ,[GoalMouthCoordinatesZ]
-      ,[GoalMouthCoordinatesX]
-      ,[GoalMouthCoordinatesY]
-        FROM [dim].[FactShotMap] s JOIN [dim].[AxeMatche] m ON [s].[matcheId] = [m].[matcheId]
-        JOIN [dim].[AxePlayer] p ON [s].[PlayerId] = [p].[PlayerId]
-        WHERE CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'
-        AND [p].[PlayerName] LIKE '%{player}%'"""
-    else:
-        query_get_shootmap_data = f"""
-            SELECT [PlayerId]
+        query_get_shootmap_data = f""" SELECT [p].[PlayerId]
         ,[s].[matcheId]
-        ,CONCAT([m].[homeName], ' - ', [m].[awayName]) as matchName
-        ,[isHome]
+        ,CONCAT([ht].[TeamShortName], ' - ', [awt].[TeamShortName]) as matchName
+        ,case when s.TeamId = HomeId then 'True' else 'False' end isHome
         ,[xgot]
         ,[time]
         ,[goalType]
@@ -233,17 +227,47 @@ def get_shootmap_data(match: str, player: str, cursor):
         ,[shotType]
         ,[goalMouthLocation]
         ,[bodyPart]
-        ,[StartY]
-        ,[StartX]
+        ,[DrawStartY] as StartY
+        ,[DrawStartX] as StartX
         ,[PlayerCoordinatesZ]
         ,[PlayerCoordinatesY]
         ,[PlayerCoordinatesX]
         ,[GoalMouthCoordinatesZ]
         ,[GoalMouthCoordinatesX]
         ,[GoalMouthCoordinatesY]
-    FROM [dim].[FactShotMap] s JOIN [dim].[AxeMatche] m
-    ON [s].[matcheId] = [m].[matcheId]
-    WHERE CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'"""
+    FROM [dim].[FactShotMap] s
+	JOIN [dim].[AxeMatche] m ON [s].[matcheId] = [m].[matcheId]
+	JOIN [dim].[AxeTeam] awt ON [awt].[TeamId]= [m].[AwayId]
+	JOIN [dim].[AxeTeam] ht ON [ht].[TeamId]= [m].[homeId]
+	JOIN [dim].[AxePlayer] [p] ON [p].[PlayerId]=[s].[PlayerId]
+    WHERE CONCAT([ht].[TeamShortName], ' - ', [awt].[TeamShortName]) = '{str(match.replace("'", "''"))}'
+     AND [p].[PlayerName] LIKE '%{player}%'"""
+    else:
+        query_get_shootmap_data = f"""
+            SELECT [PlayerId]
+        ,[s].[matcheId]
+        ,CONCAT([ht].[TeamShortName], ' - ', [awt].[TeamShortName]) as matchName
+        ,case when s.TeamId = HomeId then 'True' else 'False' end isHome
+        ,[xgot]
+        ,[time]
+        ,[goalType]
+        ,[xg]
+        ,[shotType]
+        ,[goalMouthLocation]
+        ,[bodyPart]
+        ,[DrawStartY] as StartY
+        ,[DrawStartX] as StartX
+        ,[PlayerCoordinatesZ]
+        ,[PlayerCoordinatesY]
+        ,[PlayerCoordinatesX]
+        ,[GoalMouthCoordinatesZ]
+        ,[GoalMouthCoordinatesX]
+        ,[GoalMouthCoordinatesY]
+    FROM [dim].[FactShotMap] s
+	JOIN [dim].[AxeMatche] m ON [s].[matcheId] = [m].[matcheId]
+	JOIN [dim].[AxeTeam] awt ON [awt].[TeamId]= [m].[AwayId]
+	JOIN [dim].[AxeTeam] ht ON [ht].[TeamId]= [m].[homeId]
+    WHERE CONCAT([ht].[TeamShortName], ' - ', [awt].[TeamShortName])= '{str(match.replace("'", "''"))}'"""
     shootmap_data = get_query_result(query_get_shootmap_data, cursor)
     return shootmap_data
 
@@ -260,90 +284,95 @@ def get_stackbarchart_data(match: str, cursor):
     #         "Shots on target",
     #         "Shots off target",
     #         "Blocked shots",
-    query_stackedbar = f"""SELECT [t].[teamName]
-                , CASE WHEN [m].[homeName] = [t].[teamName] THEN 'YES' ELSE 'NO' END AS [isHome]
-                ,[Ball_possession]
-                ,[Expected_goals]
-                ,[Total_shots]
-                ,[Shots_on_target]
-                ,[Shots_off_target]
-                ,[Blocked_shots]
-                FROM [dim].[FactMatcheStats] ms
-                JOIN [dim].[AxeMatche] m ON [m].[matcheId]=[ms].[matcheId]
-                JOIN [dim].[AxeTeam] t ON [t].[teamId]=[ms].[teamId]
-                WHERE CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'"""
+    query_stackedbar = f""" SELECT 
+                    [t].[TeamName]
+                    ,CONCAT([ht].[TeamName], ' - ', [awt].[TeamName]) as [MatcheName]
+                    , CASE WHEN [m].[HomeId] = [ht].[TeamId] THEN 'YES' ELSE 'NO' END AS [isHome]
+                    ,[BallPossession]
+                    ,[Expectedgoals]
+                    ,[Totalshots]
+                    ,[Shotsontarget]
+                    ,[Shotsofftarget]
+                    ,[blockedScoringAttempt]
+                    FROM [dim].[FactMatcheStats] ms
+                    JOIN [dim].[AxeMatche] m ON [m].[matcheId]=[ms].[matcheId]
+                    JOIN [dim].[AxeTeam] ht ON [ht].[TeamId]=[m].[HomeId]
+                    JOIN [dim].[AxeTeam] awt ON [awt].[TeamId]=[m].[AwayId]
+                    JOIN [dim].[AxeTeam] t ON [t].[TeamId]=[ms].[TeamId]
+                WHERE CONCAT([ht].[TeamName], ' - ', [awt].[TeamName]) = '{str(match.replace("'", "''"))}'"""
     stackedbar_data = get_query_result(query_stackedbar, cursor)
     return stackedbar_data
 
 
 def get_opponent_shootmap_data(match: str, player: str, cursor):
     if player:
-        query_get_shootmap_data = f"""SELECT [p].[playerName] as GoalKeeperName
+        query_get_shootmap_data = f"""SELECT DISTINCT [p].[playerName] as GoalKeeperName
        ,[p2].[playerName]
        ,[m].[matcheId]
-       ,CONCAT([m].[homeName], ' - ', [m].[awayName]) as matchName
-      ,[EndY]
-      ,[EndX]
+       ,CONCAT([ht].[TeamName], ' - ', [awt].[TeamName]) as matchName
       ,[xgot]
       ,[goalType]
       ,[xg]
       ,[timeSeconds]
       ,[time]
       ,[shotType]
-      ,[reversedPeriodTime]
-      ,[DrawId]
       ,[goalMouthLocation]
       ,[bodyPart]
-      ,[DatumAddedTime]
-      ,[BlockCoordinatesZ]
-      ,[BlockCoordinatesY]
-      ,[BlockCoordinatesX]
-      ,[StartY]
-      ,[StartX]
       ,[PlayerCoordinatesZ]
       ,[PlayerCoordinatesY]
       ,[PlayerCoordinatesX]
-      ,[BlockY]
       ,[GoalMouthCoordinatesY]
       ,[addedTime]
       ,[GoalMouthCoordinatesZ]
       ,[GoalMouthCoordinatesX]
-      ,[BlockX]
-      ,[isHome]
-  FROM [dim].[AxeLineUps] l 
-  JOIN [dim].[AxeMatche] m ON [l].[matcheId]=[m].[matcheId]
+      ,CASE WHEN [m].[HomeId] = [ht].[TeamId] THEN 'YES' ELSE 'NO' END AS [isHome]
+  FROM [dim].[FactMatcheStats] ms 
+  JOIN [dim].[FactPlayerMatcheStats] pms ON [ms].[matcheId]=[pms].[matcheId]
+  JOIN [dim].[FactPlayerMatcheStats] pms2 ON [ms].[matcheId]=[pms].[matcheId]
+  JOIN [dim].[AxeMatche] m ON [m].[matcheId]=[ms].[matcheId]
+  JOIN [dim].[AxeTeam] ht ON [ht].[TeamId]=[m].[HomeId]
+  JOIN [dim].[AxeTeam] awt ON [awt].[TeamId]=[m].[AwayId]
   JOIN [dim].[FactShotMap] s ON [s].[matcheId]=[m].[matcheId]
-  JOIN [dim].[AxePlayer] p2 on [p2].[PlayerId]=[s].[PlayerId]
-  JOIN [dim].[AxePlayer] p on [p].[PlayerId]=[l].[PlayerId]
+  JOIN [dim].[AxePlayer] p2 on [p2].[PlayerId]=[pms2].[PlayerId]
+  JOIN [dim].[AxePlayer] p on [p].[PlayerId]=[pms].[PlayerId]
   WHERE [p].[position] = 'G'
-  AND [p].[teamId]=[p2].[teamId]
-  AND [l].[substitute]=0
-  AND CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'
+  AND [pms].[substitute]=0
+  AND CONCAT([ht].[TeamName], ' - ', [awt].[TeamName]) = '{str(match.replace("'", "''"))}'
   AND [p].[playerName]!='{player}'"""
     else:
         query_get_shootmap_data = f"""
-            SELECT [PlayerId]
-        ,[s].[matcheId]
-        ,CONCAT([m].[homeName], ' - ', [m].[awayName]) as matchName
-        ,[isHome]
-        ,[xgot]
-        ,[time]
-        ,[goalType]
-        ,[xg]
-        ,[shotType]
-        ,[goalMouthLocation]
-        ,[bodyPart]
-        ,[StartY]
-        ,[StartX]
-        ,[PlayerCoordinatesZ]
-        ,[PlayerCoordinatesY]
-        ,[PlayerCoordinatesX]
-        ,[GoalMouthCoordinatesZ]
-        ,[GoalMouthCoordinatesX]
-        ,[GoalMouthCoordinatesY]
-    FROM [dim].[FactShotMap] s JOIN [dim].[AxeMatche] m
-    ON [s].[matcheId] = [m].[matcheId]
-    WHERE CONCAT([m].[homeName], ' - ', [m].[awayName]) = '{str(match.replace("'", "''"))}'"""
+            SELECT DISTINCT [p].[playerName] as GoalKeeperName
+       ,[p2].[playerName]
+       ,[m].[matcheId]
+       ,CONCAT([ht].[TeamName], ' - ', [awt].[TeamName]) as matchName
+      ,[xgot]
+      ,[goalType]
+      ,[xg]
+      ,[timeSeconds]
+      ,[time]
+      ,[shotType]
+      ,[goalMouthLocation]
+      ,[bodyPart]
+      ,[PlayerCoordinatesZ]
+      ,[PlayerCoordinatesY]
+      ,[PlayerCoordinatesX]
+      ,[GoalMouthCoordinatesY]
+      ,[addedTime]
+      ,[GoalMouthCoordinatesZ]
+      ,[GoalMouthCoordinatesX]
+      ,CASE WHEN [m].[HomeId] = [ht].[TeamId] THEN 'YES' ELSE 'NO' END AS [isHome]
+  FROM [dim].[FactMatcheStats] ms 
+  JOIN [dim].[FactPlayerMatcheStats] pms ON [ms].[matcheId]=[pms].[matcheId]
+  JOIN [dim].[FactPlayerMatcheStats] pms2 ON [ms].[matcheId]=[pms].[matcheId]
+  JOIN [dim].[AxeMatche] m ON [m].[matcheId]=[ms].[matcheId]
+  JOIN [dim].[AxeTeam] ht ON [ht].[TeamId]=[m].[HomeId]
+  JOIN [dim].[AxeTeam] awt ON [awt].[TeamId]=[m].[AwayId]
+  JOIN [dim].[FactShotMap] s ON [s].[matcheId]=[m].[matcheId]
+  JOIN [dim].[AxePlayer] p2 on [p2].[PlayerId]=[pms2].[PlayerId]
+  JOIN [dim].[AxePlayer] p on [p].[PlayerId]=[pms].[PlayerId]
+  WHERE [p].[position] = 'G'
+  AND [pms].[substitute]=0
+  AND CONCAT([ht].[TeamName], ' - ', [awt].[TeamName]) = '{str(match.replace("'", "''"))}'"""
     shootmap_data = get_query_result(query_get_shootmap_data, cursor)
     return shootmap_data
 
@@ -438,11 +467,11 @@ def get_shootmap_data_goalkeeper(match: str, player: str, cursor):
 
 # Get Teams list
 cursor = get_cursor(CONN)
-print("cursor: ", cursor)
 TEAMS_LIST = get_all_teams_list(cursor)
 PLAYERS_LIST = get_all_players_list(cursor)
 SEASONS_LIST = get_seasons_list(cursor)
 MATCHES_LIST = get_all_matches_list(cursor)
+COMPETITIONS_LIST = get_competitions_list(cursor)
 
 
 def shootmap_visualisations():
@@ -455,6 +484,7 @@ def shootmap_visualisations():
     team_names = TEAMS_LIST
     with col2:
         team_shootmap = st.selectbox("Shoose a Team", team_names, key="team_shootmap")
+
     matches_names = get_matches_list(team=team_shootmap, season=season)
     with col3:
         match = st.selectbox("Shoose a Match", matches_names, key="match")
@@ -467,6 +497,7 @@ def shootmap_visualisations():
     columns = [col[0] for col in cursor.description]
     data = [{col: val for col, val in zip(columns, row)} for row in shootmap_data]
     df_shootmap = pd.DataFrame(data, columns=columns)
+    print("df_shootmap columns: ",df_shootmap.head())
     if df_shootmap.empty:
         no_data_message(message="No data available for this match")
         return
@@ -490,82 +521,69 @@ def shootmap_visualisations():
 def pizzachart_visualisations():
     """Function to display the pizzachart visualisations in the Streamlit app"""
     col1, col2, col3 = st.columns(3)
-    get_kpis_query = """SELECT TOP(1) goals-(penaltiesTaken*penaltyConversion)/100 as [Non penalty Goal]
-      ,[totalTackle]
-      ,[errorLeadToAShot]
-      ,[possessionLostCtrl]
-      ,[outfielderBlock]
-      ,[totalClearance]
-      ,[expectedAssists]
-      ,[expectedGoals]
+    get_kpis_query = """SELECT TOP(1) 
+      [PlayerId]
+      ,[TeamId]
+      ,[TournamentSeasonId]
+	  ,ROUND(goals-(penaltiesTaken*penaltyConversion)/100, 1) as [Non penalty Goal]
       ,[rating]
-      ,[minutesPlayed]
-      ,[totalOffside]
-      ,[totalfouls]
-      ,[wasFouled]
-      ,[ownGoals]
       ,[goals]
-      ,[onTargetScoringAttempt]
-      ,[shotOffTarget]
-      ,[bigChanceCreated]
-      ,[wonContest]
-      ,[totalContest]
-      ,[dispossessed]
-      ,[challengeLost]
-      ,[duelWon]
-      ,[duelLost]
-      ,[aerialWon]
-      ,[aerialLost]
-      ,[touches]
-      ,[accurateCross]
-      ,[totalCross]
-      ,[goalAssist]
-      ,[penaltyWon]
-      ,[accurateKeeperSweeper]
-      ,[totalKeeperSweeper]
-      ,[savedShotsFromInsideTheBox]
-      ,[goodHighClaim]
-      ,[aerialDuelsWonPercentage]
-      ,[aerialDuelsWon]
-      ,[totalDuelsWonPercentage]
-      ,[ballRecovery]
-      ,[interceptions]
-      ,[accurateCrossesPercentage]
-      ,[accurateFinalThirdPasses]
-      ,[accurateLongBalls]
-      ,[accurateLongBallsPercentage]
+      ,[assists]
+      ,[goalsAssistsSum]
       ,[accuratePasses]
-      ,[accuratePassesPercentage]
-      ,[appearances]
       ,[inaccuratePasses]
       ,[totalPasses]
+      ,[accuratePassesPercentage]
+      ,[accurateFinalThirdPasses]
       ,[keyPasses]
       ,[successfulDribbles]
       ,[successfulDribblesPercentage]
+      ,[interceptions]
       ,[yellowCards]
-      ,[redCards]
       ,[directRedCards]
+      ,[redCards]
+      ,[accurateCrosses]
+      ,[accurateCrossesPercentage]
       ,[totalShots]
       ,[shotsOnTarget]
       ,[shotsOffTarget]
-      ,[blockedShots]
+      ,[aerialDuelsWon]
+      ,[aerialDuelsWonPercentage]
+      ,[totalDuelsWon]
+      ,[totalDuelsWonPercentage]
+      ,[minutesPlayed]
       ,[goalConversionPercentage]
       ,[penaltiesTaken]
+      ,[penaltyGoals]
       ,[shotFromSetPiece]
+      ,[accurateLongBalls]
+      ,[accurateLongBallsPercentage]
       ,[clearances]
+      ,[errorLeadToShot]
+      ,[wasFouled]
+      ,[fouls]
       ,[dribbledPast]
       ,[offsides]
+      ,[blockedShots]
       ,[passToAssist]
       ,[saves]
       ,[cleanSheet]
       ,[crossesNotClaimed]
       ,[matchesStarted]
       ,[penaltyConversion]
+      ,[totalCross]
       ,[attemptPenaltyMiss]
+      ,[totalLongBalls]
       ,[goalsConceded]
-      ,[scoringFrequency]
+      ,[yellowRedCards]
+      ,[substitutionsIn]
+      ,[substitutionsOut]
       ,[goalKicks]
-  FROM [dim].[FactPlayerStatistics]"""
+      ,[ballRecovery]
+      ,[appearances]
+      ,[DateCreation]
+      ,[DateMAJ]
+  FROM [dim].[FactPlayerStatistics];"""
     cursor = get_cursor(CONN)
     kpis_data = get_query_result(get_kpis_query, cursor)
     columns = [col[0] for col in cursor.description]
@@ -593,41 +611,13 @@ def pizzachart_visualisations():
     with col3:
         kpis_list = kpis_multiselect(columns, uuid=st.session_state.uuid_kpis)
 
-    get_player_stats_query = f"""SELECT goals-(penaltiesTaken*penaltyConversion)/100 as [Non penalty Goal]
-      ,[totalTackle]
-      ,[errorLeadToAShot]
-      ,[possessionLostCtrl]
-      ,[outfielderBlock]
-      ,[totalClearance]
-      ,[expectedAssists]
-      ,[expectedGoals]
-      ,[rating]
-      ,[minutesPlayed]
-      ,[totalOffside]
-      ,[totalfouls]
-      ,[wasFouled]
-      ,[ownGoals]
-      ,[goals]
-      ,[onTargetScoringAttempt]
-      ,[shotOffTarget]
-      ,[bigChanceCreated]
-      ,[wonContest]
-      ,[totalContest]
-      ,[dispossessed]
-      ,[challengeLost]
-      ,[duelWon]
-      ,[duelLost]
-      ,[aerialWon]
-      ,[aerialLost]
-      ,[touches]
-      ,[accurateCross]
-      ,[totalCross]
-      ,[goalAssist]
-      ,[penaltyWon]
-      ,[accurateKeeperSweeper]
-      ,[totalKeeperSweeper]
-      ,[savedShotsFromInsideTheBox]
-      ,[goodHighClaim]
+    get_player_stats_query = f"""SELECT
+ROUND([s].[goals]-(penaltiesTaken*penaltyConversion)/100,1) as [Non penalty Goal]
+      ,[s].[rating]
+      ,[s].[minutesPlayed]
+      ,[s].[wasFouled]
+      ,[s].[goals]
+      ,[s].[totalCross]
       ,[aerialDuelsWonPercentage]
       ,[aerialDuelsWon]
       ,[totalDuelsWonPercentage]
@@ -635,7 +625,7 @@ def pizzachart_visualisations():
       ,[interceptions]
       ,[accurateCrossesPercentage]
       ,[accurateFinalThirdPasses]
-      ,[accurateLongBalls]
+      ,[s].[accurateLongBalls]
       ,[accurateLongBallsPercentage]
       ,[accuratePasses]
       ,[accuratePassesPercentage]
@@ -659,20 +649,21 @@ def pizzachart_visualisations():
       ,[dribbledPast]
       ,[offsides]
       ,[passToAssist]
-      ,[saves]
+      ,[s].[saves]
       ,[cleanSheet]
       ,[crossesNotClaimed]
       ,[matchesStarted]
       ,[penaltyConversion]
       ,[attemptPenaltyMiss]
       ,[goalsConceded]
-      ,[scoringFrequency]
       ,[goalKicks]
   FROM [dim].[FactPlayerStatistics] s 
   JOIN [dim].[AxePlayer] p ON [p].[PlayerId]=[s].[playerId] 
-  JOIN [dim].[AxeTeam] t ON [t].[teamIdInterne]=[p].[teamId]
+  JOIN [dim].[FactPlayerMatcheStats] ms ON [ms].[PlayerId]=[s].[playerId] 
+  JOIN [dim].[AxeTeam] t ON [t].[TeamId]=[ms].[TeamId]
   WHERE [p].[playerName]='{str(player_pizza)}'"""
-    get_max_stats_query = """SELECT MAX((goals-(penaltiesTaken*penaltyConversion)/100)) AS [Non penalty Goal]
+    
+    get_max_stats_query = """SELECT MAX(ROUND([s].[goals]-(penaltiesTaken*penaltyConversion)/100,1)) AS [Non penalty Goal]
       ,MAX([totalTackle]) AS [totalTackle]
       ,MAX([errorLeadToAShot]) AS [errorLeadToAShot]
       ,MAX([possessionLostCtrl]) AS [possessionLostCtrl]
@@ -680,19 +671,15 @@ def pizzachart_visualisations():
       ,MAX([totalClearance]) AS [totalClearance]
       ,MAX([expectedAssists]) AS [expectedAssists]
       ,MAX([expectedGoals]) AS [expectedGoals]
-      ,MAX([rating]) AS [rating]
-      ,MAX([minutesPlayed]) AS [minutesPlayed]
+      ,MAX([s].[rating]) AS [rating]
+      ,MAX([s].[minutesPlayed]) AS [minutesPlayed]
       ,MAX([totalOffside]) AS [totalOffside]
-      ,MAX([totalfouls]) AS [totalfouls]
-      ,MAX([wasFouled]) AS [wasFouled]
+      ,MAX([s].[wasFouled]) AS [wasFouled]
       ,MAX([ownGoals]) AS [ownGoals]
-      ,MAX([goals]) AS [goals]
+      ,MAX([s].[goals]) AS [goals]
       ,MAX([onTargetScoringAttempt]) AS [onTargetScoringAttempt]
-      ,MAX([shotOffTarget]) AS [shotOffTarget]
-      ,MAX([bigChanceCreated]) AS [bigChanceCreated]
       ,MAX([wonContest]) AS [wonContest]
       ,MAX([totalContest]) AS [totalContest]
-      ,MAX([dispossessed]) AS [dispossessed]
       ,MAX([challengeLost]) AS [challengeLost]
       ,MAX([duelWon]) AS [duelWon]
       ,MAX([duelLost]) AS [duelLost]
@@ -700,12 +687,10 @@ def pizzachart_visualisations():
       ,MAX([aerialLost]) AS [aerialLost]
       ,MAX([touches]) AS [touches]
       ,MAX([accurateCross]) AS [accurateCross]
-      ,MAX([totalCross]) AS [totalCross]
+      ,MAX([s].[totalCross]) AS [totalCross]
       ,MAX([goalAssist]) AS [goalAssist]
-      ,MAX([penaltyWon]) AS [penaltyWon]
       ,MAX([accurateKeeperSweeper]) AS [accurateKeeperSweeper]
       ,MAX([totalKeeperSweeper]) AS [totalKeeperSweeper]
-      ,MAX([savedShotsFromInsideTheBox]) AS [savedShotsFromInsideTheBox]
       ,MAX([goodHighClaim]) AS [goodHighClaim]
       ,MAX([aerialDuelsWonPercentage]) AS [aerialDuelsWonPercentage]
       ,MAX([aerialDuelsWon]) AS [aerialDuelsWon]
@@ -714,7 +699,7 @@ def pizzachart_visualisations():
       ,MAX([interceptions]) AS [interceptions]
       ,MAX([accurateCrossesPercentage]) AS [accurateCrossesPercentage]
       ,MAX([accurateFinalThirdPasses]) AS [accurateFinalThirdPasses]
-      ,MAX([accurateLongBalls]) AS [accurateLongBalls]
+      ,MAX([s].[accurateLongBalls]) AS [accurateLongBalls]
       ,MAX([accurateLongBallsPercentage]) AS [accurateLongBallsPercentage]
       ,MAX([accuratePasses]) AS [accuratePasses]
       ,MAX([accuratePassesPercentage]) AS [accuratePassesPercentage]
@@ -738,18 +723,18 @@ def pizzachart_visualisations():
       ,MAX([dribbledPast]) AS [dribbledPast]
       ,MAX([offsides]) AS [offsides]
       ,MAX([passToAssist]) AS [passToAssist]
-      ,MAX([saves]) AS [saves]
+      ,MAX([s].[saves]) AS [saves]
       ,MAX([cleanSheet]) AS [cleanSheet]
       ,MAX([crossesNotClaimed]) AS [crossesNotClaimed]
       ,MAX([matchesStarted]) AS [matchesStarted]
       ,MAX([penaltyConversion]) AS [penaltyConversion]
       ,MAX([attemptPenaltyMiss]) AS [attemptPenaltyMiss]
       ,MAX([goalsConceded]) AS [goalsConceded]
-      ,MAX([scoringFrequency]) AS [scoringFrequency]
       ,MAX([goalKicks]) AS [goalKicks]
   FROM [dim].[FactPlayerStatistics] s 
   JOIN [dim].[AxePlayer] p ON [p].[PlayerId]=[s].[playerId] 
-  JOIN [dim].[AxeTeam] t ON [t].[teamIdInterne]=[p].[teamId]"""
+  JOIN [dim].[FactPlayerMatcheStats] ms ON [ms].[PlayerId]=[s].[playerId] 
+  JOIN [dim].[AxeTeam] t ON [t].[TeamId]=[ms].[TeamId];"""
     # player stats
     cursor = get_cursor(CONN)
     pizzachart_data = get_query_result(get_player_stats_query, cursor)
@@ -779,14 +764,11 @@ def pizzachart_visualisations():
     min_range = [0] * len(group_1)
     new_list = [x / 4 for x in df_max_pizzachart.max().tolist()]
     max_range = list(df_max_pizzachart.values[0])
-    print("max_range: ", df_max_pizzachart)
-    print("group_1: ", df_pizzachart)
     nb_cat = len(categories)
     list_colors = ["#FE4844", "#30E5D0", "#9726E0"]
     slice_colors = list_colors * (nb_cat // 3) + list_colors[: nb_cat % 3]
     slice_colors.sort()
     text_colors = ["#000000"] * (nb_cat)
-    print(len(slice_colors), len(text_colors), len(categories))
     if len(categories) < 1:
         no_data_message(message="No data available for this player")
     pizza = Pizzachart(
@@ -827,7 +809,6 @@ def heatmap_visualisations():
     if df_heatmap.empty:
         no_data_message(message="No data available for this player")
         return
-    print("heatmap data: ", df_heatmap)
     pitch = Heatmap(data=df_heatmap, pitch=VerticalPitch)
     fig, ax = pitch.draw()
     st.pyplot(fig)
@@ -835,7 +816,7 @@ def heatmap_visualisations():
 
 
 def goal_location_visualisations():
-    
+    # TODO: keep just players that are on the shootmap data
     team, match = None, None
     # Players shots location
     col1, col2, col3, col4, col5 = st.columns(5)
@@ -857,6 +838,7 @@ def goal_location_visualisations():
     with col4:
         matches_list = get_matches_list(team=team, season=season)
         match = st.selectbox("Shoose a match", matches_list, key="match_53")
+        
 
     with col5:
         color = st.color_picker("Color", "#00f900")
@@ -868,6 +850,9 @@ def goal_location_visualisations():
     ]
     player_value = player if player != "None" else None
     shootmap_data = get_shootmap_data(match=match, player=player_value, cursor=cursor)
+    if pd.DataFrame(shootmap_data).empty:
+        no_data_message(message="No data available for this match")
+        return (team, match) if(team is not None) and (match is not None) else ("Default", "Default")
     columns = [col[0] for col in cursor.description]
     data = [{col: val for col, val in zip(columns, row)} for row in shootmap_data]
     df_goal_location = pd.DataFrame(data, columns=columns_to_keep)
@@ -879,7 +864,6 @@ def goal_location_visualisations():
     ].astype(float)
     df_goal_location["xg"] = df_goal_location["xg"].astype(float)
     df_goal_location["shotType"] = df_goal_location["shotType"].astype(str)
-    print(df_goal_location)
     if df_goal_location.empty:
         no_data_message(message="No data available for this match")
         return (team, match) if(team is not None) and (match is not None) else ("Default", "Default")
@@ -898,6 +882,7 @@ def goal_keeper_vizualisations(match, team):
 
     with col1:
         players_list = get_players_by_match(match=match, position="G", cursor=cursor)
+        print("players_list: ", players_list, match)
         player = st.selectbox(
             "Shoose a Goalkeeper", ["None"] + players_list, key="player_gk"
         )
@@ -1003,11 +988,21 @@ def stacked_barchart_vizualisations():
 
 def main():
     left_co, cent_co, last_co = st.columns(3)
+    filter1, filter2, filter3 = st.columns(3)
     script_dir = os.path.dirname(__file__)
     image_path = os.path.join(script_dir, "assets/images/logo_botola_insights_red.png")
     with cent_co:
         image = Image.open(image_path)
         st.image(image, width=150)
+
+    with filter1:
+        competion_list = COMPETITIONS_LIST
+        competition = st.selectbox("Shoose a competition", competion_list, key="competition_principal")
+
+    with filter2:
+        seasons_list = get_seasons_list_by_competition(cursor=cursor, competition=competition)
+        season = st.selectbox("Shoose a season", seasons_list, key="season_principal")
+
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
         [
             "Heatmap",
@@ -1020,7 +1015,7 @@ def main():
     )
     with tab1:
         st.header("Heatmap Visualization")
-        # heatmap_visualisations()
+        heatmap_visualisations()
 
     with tab2:
         st.header("Shootmap Visualization")
