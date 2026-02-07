@@ -6,3 +6,10 @@ images/shootmap
 images/heatmap
 *.log
 secrets.toml
+*.json
+*.png
+*.xlsx
+*.csv
+*.drawio
+*.drawio.bkp
+.env

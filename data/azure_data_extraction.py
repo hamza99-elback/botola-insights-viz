@@ -21,8 +21,12 @@ def get_conn():
         conn = pyodbc.connect(connection_string)
     except Exception as e:
         logging.error(f"Error while connecting to the database, try using string connection for ODBC 18: {e}")
-        connection_string = os.getenv("CONNECTION_STRING_READ_ONLY_DRIVER_17")
-        conn = pyodbc.connect(connection_string)
+        try:
+            connection_string = os.getenv("CONNECTION_STRING_READ_ONLY_DRIVER_17")
+            conn = pyodbc.connect(connection_string)
+        except Exception as e:
+            connection_string = os.getenv("LOCAL_CONNECTION_STRING")
+            conn = pyodbc.connect(connection_string)
     # else:
     #     logging.error(f"Error while connecting to the database")
     return conn

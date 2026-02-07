@@ -129,7 +129,7 @@ class ShootMap:
                                 )
 
                 self.pitch.scatter(row["PlayerCoordinatesX"], row["PlayerCoordinatesY"],
-                                s=250 ,
+                                s=100 ,
                                 c=marker_color, 
                                 edgecolors=edge_colors,
                                 marker=marker,
@@ -168,19 +168,17 @@ class ShootMap:
 
 
 if __name__ == "__main__":
-    
+
     # Start generating shotmap for match
-    json_tool = JsonTool(path="./data/far_jsk.json")
+    json_tool = JsonTool(path="./data/zambi_mar.json")
     data = json_tool.get_data()
     df_shootmap = pd.DataFrame(data['shotmap'])
-    # df_shootmap = pd.read_excel("./data/wac_codm.xlsx")
-    # df_shootmap=df_shootmap.dropna(subset=['xg'])
     shootmap_processor = ShootmapProcessor(data=data['shotmap'])
 
     # shootmap_processor = ShootmapProcessor(data=df_shootmap)
     df_team1, df_team2 = shootmap_processor.process_data()
-    df_team1["xg"] = 1
-    df_team2["xg"] = 1
+    df_team1["xg"] = 0.5
+    df_team2["xg"] = 0.5
 
     df_team1.rename(columns={
                 "draw.start.x": "DrawStartX",
@@ -201,79 +199,17 @@ if __name__ == "__main__":
 
     df_team2["DrawStartX"] = 100 - df_team2["DrawStartX"]
     df_team2["DrawEndX"] = 100 - df_team2["DrawEndX"]
-    # df_team1.rename(columns={
-    #             "draw.start.x": "DrawStartX",
-    #             "draw.start.y": "DrawStartY",
-    #             "draw.end.x": "DrawEndX",
-    #             "draw.end.y": "DrawEndY",
-    #             "goalType": "GoalType"
-    #                 }, inplace=True)
     # df_team1["PlayerCoordinatesX"] =  100 - df_team1["PlayerCoordinatesX"]
     df_team1["PlayerCoordinatesY"] = 100 - df_team1["PlayerCoordinatesY"]
     df_team1["DrawStartX"] = 100 - df_team1["DrawStartX"]
     df_team1["DrawEndX"] = 100 - df_team1["DrawEndX"]
     # df_team1 = df_team1[df_team1["shotType"] == "save"]
     pitch = ShootMap(
-        df_team1=df_team1,
+        df_team1=df_team2,
         df_team2=None,
         pitch=Pitch,
-        team1_c="#FF1717",
+        team1_c="#D80505",
         team2_c="#F9FD00",
     )
     fig, ax = pitch.draw_v3(save_figure=True, show_figure=True)
-    # End generating shotmap for match
-
-    # startccustom shotmap
-    # json_tool = JsonTool(path="./data/mar_niger.json")
-    # data1 = json_tool.get_data()
-    # df_shootmap1 = pd.DataFrame(data1['shotmap'])
-    # json_tool = JsonTool(path="./data/mar_tanz.json")
-    # data2 = json_tool.get_data()
-    # df_shootmap2 = pd.DataFrame(data2['shotmap'])
-    # shootmap_processor1 = ShootmapProcessor(data=data1['shotmap'])
-    # shootmap_processor2 = ShootmapProcessor(data=data2['shotmap'])
-    # df_team11, df_team21 = shootmap_processor1.process_data()
-    # df_team12, df_team22 = shootmap_processor2.process_data()
-    # df_team21["PlayerCoordinatesX"] = 100 - df_team21["PlayerCoordinatesX"]
-    # df_team21["PlayerCoordinatesY"] = 100 - df_team21["PlayerCoordinatesY"]
-    # df_merged = pd.concat([df_team21, df_team12], ignore_index=True)
-    # df_merged["xg"] = 0.5
-    # # df_merged.rename(columns={
-    # #             "XG": "xg",
-    # #             "ShotType": "shotType",
-    # #                 }, inplace=True)
-    # pitch = ShootMap(
-    #     df_team1=df_merged,
-    #     df_team2=None,
-    #     pitch=Pitch,
-    #     team1_c="#EE272B",
-    #     team2_c="#81ACDB",
-    # )
-    # fig, ax = pitch.draw_v2(save_figure=True, show_figure=True)
-    # end custom shotmap
-
-    # # start genereting custom shotmap
-    # df_shootmap = pd.read_excel("./data/goal_location/young_vs_far.xlsx")
-    # # TODO: rename columns XG, ShotType ...
-    # df_shootmap.rename(columns={
-    #             "XG": "xg",
-    #             "ShotType": "shotType",
-    #                 }, inplace=True)
-    # df_shootmap=df_shootmap.dropna(subset=['xg'])
-    # # df_shootmap["PlayerCoordinatesX"] = 100 - df_shootmap["PlayerCoordinatesX"]
-    # df_shootmap["PlayerCoordinatesY"] = 100 - df_shootmap["PlayerCoordinatesY"]
-    # df_shootmap["DrawStartX"] = 100 - df_shootmap["DrawStartX"]
-    # df_shootmap["DrawEndX"] = 100 - df_shootmap["DrawEndX"]
-
-
-    # pitch = ShootMap(
-    # df_team1=df_shootmap,
-    # df_team2=None,
-    # pitch=Pitch,
-    # team1_c="#27C7F2",
-    # team2_c="#81ACDB",
-    # )
-    # fig, ax = pitch.draw_v3(save_figure=True, show_figure=True)
-    # # End genereting custom shotmap
-
-
+   

@@ -118,9 +118,9 @@ class ShootMap:
                                     else (0, 0, 0, 0)
                                 )
                 edge_colors = (
-                                    self.team1_edge_c if row['shotType'] == 'goal' and row['GoalType'] != 'penalty'
+                                    "#302903" if row['shotType'] == 'goal' and row['GoalType'] != 'penalty'
                                     else self.team1_edge_c if row['shotType'] == 'goal' and row['GoalType'] == 'penalty'
-                                    else self.team1_c
+                                    else "#302903"
                                 )
                 marker = (
                            'o' if row['shotType'] == 'goal' and row['GoalType'] != 'penalty'
@@ -138,7 +138,7 @@ class ShootMap:
                 self.pitch.lines(row.DrawStartY, row.DrawStartX,
                     row.DrawEndY, row.DrawEndX, comet=True,
                     label='shot', 
-                    color=(self.team1_c if row['shotType'] == 'goal' else self.team1_c), 
+                    color=(self.team1_c if row['shotType'] == 'goal' else self.team1_edge_c), 
                     ax=self.ax,
                     lw=0.2,
                     zorder=(2 if row['shotType'] == 'goal' else 1)
@@ -150,7 +150,7 @@ class ShootMap:
         if self.df_team2 is not None and not self.df_team2.empty:
             for i, row in self.df_team2.iterrows():
                 marker_color = self.team2_c if row['shotType'] == 'goal' else (0, 0, 0, 0)
-                edge_colors = self.team2_edge_c if row['shotType'] == 'goal' else self.team2_c
+                edge_colors = "#023F1D" if row['shotType'] == 'goal' else self.team2_c
 
                 self.pitch.scatter(row["PlayerCoordinatesX"], row["PlayerCoordinatesY"],
                                     s=(row["xg"] * 700) ,
@@ -168,57 +168,64 @@ class ShootMap:
 
 
 if __name__ == "__main__":
-    
-    # Start generating shotmap for match
-    json_tool = JsonTool(path="./data/far_jsk.json")
-    data = json_tool.get_data()
-    df_shootmap = pd.DataFrame(data['shotmap'])
-    # df_shootmap = pd.read_excel("./data/wac_codm.xlsx")
-    # df_shootmap=df_shootmap.dropna(subset=['xg'])
-    shootmap_processor = ShootmapProcessor(data=data['shotmap'])
 
-    # shootmap_processor = ShootmapProcessor(data=df_shootmap)
-    df_team1, df_team2 = shootmap_processor.process_data()
-    df_team1["xg"] = 1
-    df_team2["xg"] = 1
-
-    df_team1.rename(columns={
-                "draw.start.x": "DrawStartX",
-                "draw.start.y": "DrawStartY",
-                "draw.end.x": "DrawEndX",
-                "draw.end.y": "DrawEndY",
-                "goalType": "GoalType"
-                    }, inplace=True)
-    df_team2.rename(columns={
-                "draw.start.x": "DrawStartX",
-                "draw.start.y": "DrawStartY",
-                "draw.end.x": "DrawEndX",
-                "draw.end.y": "DrawEndY",
-                "goalType": "GoalType"
-                    }, inplace=True)
-    df_team2["PlayerCoordinatesX"] =  100 - df_team2["PlayerCoordinatesX"]
-    # df_team2["PlayerCoordinatesY"] = 100 - df_team2["PlayerCoordinatesY"]
-
-    df_team2["DrawStartX"] = 100 - df_team2["DrawStartX"]
-    df_team2["DrawEndX"] = 100 - df_team2["DrawEndX"]
-    # df_team1.rename(columns={
+    # files_list = ["./data/nig_data/nig_moz.json", "./data/nig_data/nig_tan.json", "./data/nig_data/nig_tun.json", "./data/nig_data/alg_nig.json", "./data/nig_data/aug_nig.json"]
+    # for file in files_list:
+    #     json_tool = JsonTool(path=file)
+    #     input = json_tool.get_data()
+        # shootmap_processor = ShootmapProcessor(data=input['shotmap'])
+    #     df_team1, df_team2 = shootmap_processor.process_data()
+    #     df_team1["xg"] = 0.8
+    #     df_team2["xg"] = 0.8
+    #     df_team1.rename(columns={
     #             "draw.start.x": "DrawStartX",
     #             "draw.start.y": "DrawStartY",
     #             "draw.end.x": "DrawEndX",
     #             "draw.end.y": "DrawEndY",
     #             "goalType": "GoalType"
     #                 }, inplace=True)
-    # df_team1["PlayerCoordinatesX"] =  100 - df_team1["PlayerCoordinatesX"]
-    df_team1["PlayerCoordinatesY"] = 100 - df_team1["PlayerCoordinatesY"]
-    df_team1["DrawStartX"] = 100 - df_team1["DrawStartX"]
-    df_team1["DrawEndX"] = 100 - df_team1["DrawEndX"]
-    # df_team1 = df_team1[df_team1["shotType"] == "save"]
+    #     df_team2.rename(columns={
+    #                 "draw.start.x": "DrawStartX",
+    #                 "draw.start.y": "DrawStartY",
+    #                 "draw.end.x": "DrawEndX",
+    #                 "draw.end.y": "DrawEndY",
+    #                 "goalType": "GoalType"
+    #                     }, inplace=True)
+    #     df_team2["PlayerCoordinatesX"] =  100 - df_team2["PlayerCoordinatesX"]
+
+    #     df_team2["DrawStartX"] = 100 - df_team2["DrawStartX"]
+    #     df_team2["DrawEndX"] = 100 - df_team2["DrawEndX"]
+        
+    #     df_team1["PlayerCoordinatesY"] = 100 - df_team1["PlayerCoordinatesY"]
+    #     df_team1["DrawStartX"] = 100 - df_team1["DrawStartX"]
+    #     df_team1["DrawEndX"] = 100 - df_team1["DrawEndX"]
+    #     if file == files_list[0]:
+    #         final_df = df_team1
+    #     elif file!=files_list[3] and file!=files_list[4]:
+    #         final_df = pd.concat([final_df, df_team1], ignore_index=True)
+    #     elif file==files_list[3] or file==files_list[4]:
+    #         final_df = pd.concat([final_df, df_team2], ignore_index=True)
+    
+    import json
+    with open('C:\\Users\\hp\\Documents\\projects\\botola-insights\\data\\mas_data\\match_shotmaps_2026-01-25_11-40-42.json', 'r') as f:
+        data = json.load(f)
+
+    final_df = pd.DataFrame()
+    for item in data:
+        df = pd.json_normalize(item["data"]["shotmap"])
+        final_df = pd.concat([final_df, df], ignore_index=True)
+    shootmap_processor = ShootmapProcessor(data=final_df)
+    df = shootmap_processor.process_data_mono()
+    df_benjdida = df[df["player.name"] == "Soufiane Benjdida"]
+
     pitch = ShootMap(
-        df_team1=df_team1,
+        df_team1=df_benjdida,
         df_team2=None,
         pitch=Pitch,
-        team1_c="#FF1717",
+        team1_c="#F9FD00",
         team2_c="#F9FD00",
+        team1_edge_c="#302903",
+        team2_edge_c="#302903",
     )
     fig, ax = pitch.draw_v3(save_figure=True, show_figure=True)
     # End generating shotmap for match
