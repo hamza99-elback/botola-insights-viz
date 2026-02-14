@@ -32,14 +32,14 @@ class ShootmapProcessor:
         # Display the DataFrame
         if isinstance(self.data, list):
             df = pd.json_normalize(self.data)
-            df.rename(columns={
-                "playerCoordinates.x": "PlayerCoordinatesX",
-                "playerCoordinates.y": "PlayerCoordinatesY",
-                "playerCoordinates.z": "PlayerCoordinatesZ",
-                "goalMouthCoordinates.x": "GoalMouthCoordinatesX",
-                "goalMouthCoordinates.y": "GoalMouthCoordinatesY",
-                "goalMouthCoordinates.z": "GoalMouthCoordinatesZ",
-                    }, inplace=True)
+            # df.rename(columns={
+            #     "playerCoordinates.x": "PlayerCoordinatesX",
+            #     "playerCoordinates.y": "PlayerCoordinatesY",
+            #     "playerCoordinates.z": "PlayerCoordinatesZ",
+            #     "goalMouthCoordinates.x": "GoalMouthCoordinatesX",
+            #     "goalMouthCoordinates.y": "GoalMouthCoordinatesY",
+            #     "goalMouthCoordinates.z": "GoalMouthCoordinatesZ",
+            #         }, inplace=True)
         else:
             df = self.data
         
@@ -49,7 +49,22 @@ class ShootmapProcessor:
             df = df[df["isHome"] == self.isHome]
         df.loc[df["time"] <= 45, "Half"] = "First"
         df.loc[df["time"] > 45, "Half"] = "Second"
-        
+
+        df.rename(columns={
+                "draw.start.x": "DrawStartX",
+                "draw.start.y": "DrawStartY",
+                "draw.end.x": "DrawEndX",
+                "draw.end.y": "DrawEndY",
+                "goalType": "GoalType",
+                "playerCoordinates.x": "PlayerCoordinatesX",
+                "playerCoordinates.y": "PlayerCoordinatesY",
+                "playerCoordinates.z": "PlayerCoordinatesZ",
+                "goalMouthCoordinates.x": "GoalMouthCoordinatesX",
+                "goalMouthCoordinates.y": "GoalMouthCoordinatesY",
+                "goalMouthCoordinates.z": "GoalMouthCoordinatesZ",
+                    }, inplace=True)
+        df["xg"] = 1
+        print("df columns: ", df.columns)
         df_team1 = df[df["isHome"] == True]
         df_team2 = df[df["isHome"] == False]
         logging.info(f"before edit: {df_team2['PlayerCoordinatesX']}")
