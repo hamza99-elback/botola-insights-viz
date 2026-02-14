@@ -62,10 +62,10 @@ class Heatmap:
             plt.savefig(f'./images/heatmap/heatmap_{str(formatted_datetime)}.png', dpi=300, bbox_inches='tight', transparent=True)
         return self.fig, self.ax
 
-    def draw(self, save_figure:bool=False, show_figure:bool=False):
+    def draw(self, save_figure:bool=False, show_figure:bool=False, color_palette=['#FFFFFF',  "#D33131", "#5F0202"]):
         # pearl_earring_cmap_100 = LinearSegmentedColormap.from_list("Pearl Earring - 100 colors", ['#FFFFFF',"#7082E7", "#1B234E"], N=100) # ['#F7F7F7', '#C384FF','#00FFD4', '#FBFF00', '#FE5202'], ['none','#C384FF','#00FFD4', '#FBFF00', '#FE5202']
         # pearl_earring_cmap_100 = LinearSegmentedColormap.from_list("Pearl Earring - 100 colors", ['#FFFFFF',"#70E7CD", "#1B4E2C"], N=100)
-        pearl_earring_cmap_100 = LinearSegmentedColormap.from_list("Pearl Earring - 100 colors", ['#FFFFFF',  "#D33131", "#5F0202"], N=100)
+        pearl_earring_cmap_100 = LinearSegmentedColormap.from_list("Pearl Earring - 100 colors", color_palette, N=100)
 
         pitch = VerticalPitch(line_color="#424242", line_zorder=2, pitch_color=self.pitch_color, pad_bottom=0, pad_left=0, pad_right=0, pad_top=0, pitch_type='opta', pitch_length=100, pitch_width=100)
         self.fig, self.ax = pitch.draw(figsize=self.figsize)
