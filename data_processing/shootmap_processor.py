@@ -69,7 +69,7 @@ class ShootmapProcessor:
         df_team2 = df[df["isHome"] == False]
         logging.info(f"before edit: {df_team2['PlayerCoordinatesX']}")
         df_team2["PlayerCoordinatesX"] = axis_width - df_team2["PlayerCoordinatesX"]
-        df_team2["PlayerCoordinatesY"] = axis_height - df_team2["PlayerCoordinatesY"]
+        df_team1["PlayerCoordinatesY"] = axis_height - df_team1["PlayerCoordinatesY"]
         logging.info(f"after edit: {df_team2['PlayerCoordinatesX']}")
         return (df_team1, df_team2)
 
