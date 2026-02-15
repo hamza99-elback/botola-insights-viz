@@ -1,10 +1,8 @@
-from mplsoccer import (
-    Radar,
-    FontManager,
-)
-import pandas as pd
-import matplotlib.pyplot as plt
 from datetime import datetime
+
+import matplotlib.pyplot as plt
+import pandas as pd
+from mplsoccer import FontManager, Radar
 
 fm_rubik = FontManager(
     "https://raw.githubusercontent.com/google/fonts/main/ofl/"
@@ -20,7 +18,7 @@ class Radarchart:
         params,
         low,
         high,
-        lower_is_better,
+        lower_is_better=None,
         group1_c="#0A5B3A",
         group2_c="#FF4B44",
     ):
@@ -144,7 +142,95 @@ class Radarchart:
             )
         if show_figure:
             plt.show()
-            
-if __name__=="__main__":
+
+        return self.fig, self.ax
+
+    def draw_v2(
+        self,
+        save_figure: bool = False,
+        show_figure: bool = True,
+        csv_file: str = None,
+        filename: str = None,
+    ):
+        """Draw Radarchart with CSV data support and enhanced styling"""
+        player1_values = self.group_1
+        player2_values = self.group_2
+
+        # Font managers
+        URL4 = "https://raw.githubusercontent.com/googlefonts/roboto/main/src/hinted/Roboto-Thin.ttf"
+        roboto_thin = FontManager(URL4)
+
+        # Draw background rings
+        rings_inner = self.radar.draw_circles(
+            ax=self.ax, facecolor="#152143", edgecolor="black"
+        )
+
+        # Draw the radar for both players
+        radar_player1, vertices_player1 = self.radar.draw_radar_solid(
+            player1_values,
+            ax=self.ax,
+            kwargs={
+                "facecolor": self.group1_c,
+                "alpha": 0.6,
+                "edgecolor": self.group1_c,
+                "lw": 3,
+            },
+        )
+        radar_player2, vertices_player2 = self.radar.draw_radar_solid(
+            player2_values,
+            ax=self.ax,
+            kwargs={
+                "facecolor": self.group2_c,
+                "alpha": 0.6,
+                "edgecolor": self.group2_c,
+                "lw": 3,
+            },
+        )
+
+        # Add scatter points for vertices
+        self.ax.scatter(
+            vertices_player2[:, 0],
+            vertices_player2[:, 1],
+            c=self.group2_c,
+            edgecolors=self.group2_c,
+            marker="o",
+            s=150,
+            zorder=2,
+        )
+        self.ax.scatter(
+            vertices_player1[:, 0],
+            vertices_player1[:, 1],
+            c=self.group1_c,
+            edgecolors=self.group1_c,
+            marker="o",
+            s=150,
+            zorder=2,
+        )
+
+        # Add labels
+        range_labels = self.radar.draw_range_labels(
+            ax=self.ax, fontsize=25, fontproperties=roboto_thin.prop, color="white"
+        )
+        param_labels = self.radar.draw_param_labels(
+            ax=self.ax, fontsize=22, fontproperties=roboto_thin.prop, color="white"
+        )
+
+        if save_figure:
+            if filename:
+                save_path = f"./images/radar/{filename}.png"
+            else:
+                current_datetime = datetime.now()
+                formatted_datetime = current_datetime.strftime("%d-%m-%y_%H-%M-%S")
+                save_path = f"./images/radar/radar_{str(formatted_datetime)}.png"
+
+            self.fig.savefig(save_path, dpi=300, bbox_inches="tight", transparent=True)
+
+        if show_figure:
+            plt.show()
+
+        return self.fig, self.ax
+
+
+if __name__ == "__main__":
     radar = Radarchart()
-    radar.draw_radarchart()
+    radar.draw()

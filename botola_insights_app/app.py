@@ -1,27 +1,26 @@
-import sys
 import os
+import sys
 import uuid
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import streamlit as st
-from mplsoccer import Pitch
+import datetime
 import io
-from charts.shootmap import ShootMap
-from charts.pizzachart import Pizzachart
+import json
+import logging
+import random
+
+import pandas as pd
+import streamlit as st
+from mplsoccer import Pitch, VerticalPitch
+from PIL import Image
+
 from charts.heatmap import Heatmap
+from charts.pizzachart import Pizzachart
+from charts.radarchart import Radarchart
+from charts.shootmap import ShootMap
 from charts.shot_goal_location import ShotGoalLocation
 from charts.stackedbarchart import StackedBarChart
-import pandas as pd
 from data_processing.shootmap_processor import ShootmapProcessor
-import random
-from mplsoccer import (
-    VerticalPitch,
-    Pitch,
-)
-import logging
-import datetime
-from PIL import Image
-import json
 
 # TODO: add Season Filter in all the queries
 # TODO: Isolate all queries results in a separate file
@@ -89,7 +88,7 @@ def get_all_teams_list(cursor):
     return team_names
 
 
-def get_seasons_list(cursor)->tuple:
+def get_seasons_list(cursor) -> tuple:
     """Get all seasons list from the database"""
     query_get_seasons = """SELECT [seasonYear]
     FROM [dim].[AxeTournamentSeason]
@@ -99,7 +98,7 @@ def get_seasons_list(cursor)->tuple:
     return seasons_names
 
 
-def get_seasons_list_by_competition(cursor, competition)->tuple:
+def get_seasons_list_by_competition(cursor, competition) -> tuple:
     """Get all seasons list from the database"""
     query_get_seasons = f"""SELECT DISTINCT seasonYear
             FROM [dim].[AxeTournamentSeason]
@@ -107,7 +106,6 @@ def get_seasons_list_by_competition(cursor, competition)->tuple:
     seasons = ""
     seasons_names = tuple([season[0] for season in seasons])
     return seasons_names
-
 
 
 def get_all_players_list(cursor):
@@ -120,7 +118,8 @@ def get_all_players_list(cursor):
     players = ""
     # get Team names
     player_names = [
-        {"player_name": player[1], "position": player[2],"team_name": player[0]} for player in players
+        {"player_name": player[1], "position": player[2], "team_name": player[0]}
+        for player in players
     ]
     return player_names
 
@@ -140,10 +139,12 @@ def get_players_list(team_name: str, position: str = None):
         ]
     return player_list
 
+
 def get_teams_by_season(season: str):
     pass
 
-def get_matches_list(team: str, season: str)->list:
+
+def get_matches_list(team: str, season: str) -> list:
     """Get Matches list by team and season
 
     Args:
@@ -193,14 +194,16 @@ def shootmap_visualisations():
         data = json.loads(json_text)
     else:
         data = ""
-    df_shootmap = pd.DataFrame(data=data['shotmap']) if 'shotmap' in data else pd.DataFrame()   
-    print("df_shootmap columns: ",df_shootmap.head())
+    df_shootmap = (
+        pd.DataFrame(data=data["shotmap"]) if "shotmap" in data else pd.DataFrame()
+    )
+    print("df_shootmap columns: ", df_shootmap.head())
     if df_shootmap.empty:
         no_data_message(message="No data available for this match")
         return
 
     # Here we can prepare the data for the shootmap
-    shootmap_processor = ShootmapProcessor(data=data['shotmap'])
+    shootmap_processor = ShootmapProcessor(data=data["shotmap"])
     logging.info("Processing data")
     df_team1, df_team2 = shootmap_processor.process_data()
     pitch = ShootMap(
@@ -218,7 +221,7 @@ def shootmap_visualisations():
 def pizzachart_visualisations():
     """Function to display the pizzachart visualisations in the Streamlit app"""
     col1, col2, col3 = st.columns(3)
-    
+
     columns = [col[0] for col in cursor.description]
     team_names = get_all_teams_list(cursor)
     if "uuid_team" not in st.session_state:
@@ -244,7 +247,6 @@ def pizzachart_visualisations():
     with col3:
         kpis_list = kpis_multiselect(columns, uuid=st.session_state.uuid_kpis)
 
-    
     # player stats
     pizzachart_data = ""
     columns_pizza = [col[0] for col in cursor.description]
@@ -296,15 +298,24 @@ def heatmap_visualisations():
     data = []
     team_list = TEAMS_LIST
     st.subheader("Choose Heatmap Color Palette")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        color1 = st.color_picker("Low Intensity", value="#FFFFFF", help="Color for low values")
+        color1 = st.color_picker(
+            "Low Intensity", value="#FFFFFF", help="Color for low values"
+        )
     with col2:
-        color2 = st.color_picker("Medium Intensity", value="#D33131", help="Color for medium values") 
+        color2 = st.color_picker(
+            "Medium Intensity", value="#D33131", help="Color for medium values"
+        )
     with col3:
-        color3 = st.color_picker("High Intensity", value="#5F0202", help="Color for high values")
-    
+        color3 = st.color_picker(
+            "High Intensity", value="#5F0202", help="Color for high values"
+        )
+    with col4:
+        line_color = st.color_picker(
+            "Line Color", value="#424242", help="Color for pitch lines"
+        )
     uploaded_file = st.file_uploader("Choose a file", key="heatmap_fileuploader")
     json_text = st.text_area(
         "Paste the heatmap here (json format)", key="heatmap_textarea"
@@ -318,12 +329,16 @@ def heatmap_visualisations():
         data = json.loads(json_text)
     else:
         data = ""
-    df_heatmap = pd.DataFrame(data['points']) if 'points' in data else pd.DataFrame(data['heatmap']) if 'heatmap' in data else pd.DataFrame()
+    df_heatmap = (
+        pd.DataFrame(data["points"])
+        if "points" in data
+        else pd.DataFrame(data["heatmap"]) if "heatmap" in data else pd.DataFrame()
+    )
     if df_heatmap.empty:
         no_data_message(message="No data available for this player")
         return
     pitch = Heatmap(data=df_heatmap, pitch=VerticalPitch)
-    fig, ax = pitch.draw(color_palette=[color1, color2, color3])
+    fig, ax = pitch.draw(color_palette=[color1, color2, color3], line_color=line_color)
     st.pyplot(fig)
     save_fig(fig=fig, file_name="Heatmap.png", key="heatmap")
 
@@ -331,43 +346,52 @@ def heatmap_visualisations():
 def goal_location_visualisations():
     # TODO: keep just players that are on the shootmap data
     team, match = None, None
+    st.subheader("Choose main color")
     # Players shots location
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2 = st.columns(2)
 
     with col1:
-        seasons_list = SEASONS_LIST
-        season = st.selectbox("Shoose a season", seasons_list, key="season_53")
+        home_list = ["Home", "Away"]
+        home_value = st.selectbox("Shoose a season", home_list, key="home_value")
 
     with col2:
-        teams_list = TEAMS_LIST
-        team = st.selectbox("Shoose a Team", teams_list, key="team_53")
-
-    with col3:
-        players_list = get_players_list(team)
-        player = st.selectbox(
-            "Shoose a Player", ["None"] + players_list, key="player_53"
-        )
-
-    with col4:
-        matches_list = get_matches_list(team=team, season=season)
-        match = st.selectbox("Shoose a match", matches_list, key="match_53")
-        
-
-    with col5:
         color = st.color_picker("Color", "#00f900")
+
+    uploaded_file = st.file_uploader("Choose a file", key="goallocation_fileuploader")
+    json_text = st.text_area(
+        "Paste the heatmap here (json format)", key="goallocation_textarea"
+    )
+    if uploaded_file is not None:
+        data = json.loads(uploaded_file.read())
+        # st.button("Use this data", on_click=lambda: st.session_state.update(heatmap_data=dataframe))
+    elif json_text:
+        data = json.loads(json_text)
+    else:
+        data = ""
+
+    if len(data) == 0:
+        no_data_message(message="No data available for this match")
+        return
+
+    # Here we can prepare the data for the shootmap
+    shootmap_processor = ShootmapProcessor(data=data["shotmap"])
+    logging.info("Processing data")
+    df_team1, df_team2 = shootmap_processor.process_data()
+
     columns_to_keep = [
         "GoalMouthCoordinatesY",
         "GoalMouthCoordinatesZ",
         "shotType",
         "xg",
     ]
-    shootmap_data = ""
-    if pd.DataFrame(shootmap_data).empty:
-        no_data_message(message="No data available for this match")
-        return (team, match) if(team is not None) and (match is not None) else ("Default", "Default")
-    columns = [col[0] for col in cursor.description]
-    data = [{col: val for col, val in zip(columns, row)} for row in shootmap_data]
-    df_goal_location = pd.DataFrame(data, columns=columns_to_keep)
+    if home_value == "Home":
+        df_goal_location = df_team1[columns_to_keep]
+    else:
+        df_goal_location = df_team2[columns_to_keep]
+    if df_goal_location.empty:
+        no_data_message(message="No data available for this team")
+        return
+
     df_goal_location["GoalMouthCoordinatesY"] = df_goal_location[
         "GoalMouthCoordinatesY"
     ].astype(float)
@@ -376,21 +400,17 @@ def goal_location_visualisations():
     ].astype(float)
     df_goal_location["xg"] = df_goal_location["xg"].astype(float)
     df_goal_location["shotType"] = df_goal_location["shotType"].astype(str)
-    if df_goal_location.empty:
-        no_data_message(message="No data available for this match")
-        return (team, match) if(team is not None) and (match is not None) else ("Default", "Default")
 
     shot_goal_location = ShotGoalLocation(
-        data=df_goal_location.to_records(), color=color
+        data=df_goal_location.to_records(), color=color, edge_color=color
     )
     fig, ax = shot_goal_location.draw()
     st.pyplot(fig)
     save_fig(fig=fig, file_name="ShotGoalLocation.png", key="goal_location")
-    return (team, match) if(team is not None) and (match is not None) else ("Default", "Default")
 
 
 def goal_keeper_vizualisations(match, team):
-    col1, col2= st.columns(2)
+    col1, col2 = st.columns(2)
 
     with col1:
         players_list = [""]
@@ -401,7 +421,7 @@ def goal_keeper_vizualisations(match, team):
 
     with col2:
         color = st.color_picker("Color", "#00f900", key="color_gk")
-        
+
     columns_to_keep = [
         "GoalMouthCoordinatesY",
         "GoalMouthCoordinatesZ",
@@ -421,7 +441,9 @@ def goal_keeper_vizualisations(match, team):
     ].astype(float)
     df_goal_location["xg"] = df_goal_location["xg"].astype(float)
     df_goal_location["shotType"] = df_goal_location["shotType"].astype(str)
-    df_goal_location = df_goal_location.loc[df_goal_location["shotType"].isin(['save', 'goal'])]
+    df_goal_location = df_goal_location.loc[
+        df_goal_location["shotType"].isin(["save", "goal"])
+    ]
     if df_goal_location.empty:
         no_data_message(message="No data available for this match")
         return
@@ -431,7 +453,6 @@ def goal_keeper_vizualisations(match, team):
     fig, ax = shot_goal_location.draw()
     st.pyplot(fig)
     save_fig(fig=fig, file_name="GoalKeeperShots.png", key="goal_keeper")
-    
 
 
 def stacked_barchart_vizualisations():
@@ -440,7 +461,7 @@ def stacked_barchart_vizualisations():
     with col1:
         col_team1 = st.color_picker("Color", "#00f900", key="col_team1")
         col_team2 = st.color_picker("Color", "#000990", key="col_team2")
-        
+
     with col2:
         season = st.selectbox("Shoose Season", SEASONS_LIST, key="season_sbr")
 
@@ -461,12 +482,16 @@ def stacked_barchart_vizualisations():
     if df_stacked.empty:
         no_data_message(message="No data available for this match")
         return
-    home_data = list(df_stacked.loc[df_stacked["isHome"]=="YES"].to_records()[0])[3:]
-    away_data = list(df_stacked.loc[df_stacked["isHome"]=="NO"].to_records()[0])[3:]
-    home_data = [float(home_data[_]) if _==1 else int(home_data[_]) for _ in range(len(home_data))]
-    away_data = [float(home_data[_]) if _==1 else int(away_data[_]) for _ in range(len(away_data))]
-    
-    
+    home_data = list(df_stacked.loc[df_stacked["isHome"] == "YES"].to_records()[0])[3:]
+    away_data = list(df_stacked.loc[df_stacked["isHome"] == "NO"].to_records()[0])[3:]
+    home_data = [
+        float(home_data[_]) if _ == 1 else int(home_data[_])
+        for _ in range(len(home_data))
+    ]
+    away_data = [
+        float(home_data[_]) if _ == 1 else int(away_data[_])
+        for _ in range(len(away_data))
+    ]
 
     data = {
         "home": home_data,
@@ -498,30 +523,96 @@ def stacked_barchart_vizualisations():
     save_fig(fig=fig, file_name="StackedBarChart.png", key="stackedbar")
 
 
+def example_radarchart_data():
+    example_data = {
+        "Player": ["Player A", "Player B"],
+        "Goals": [10, 8],
+        "Assists": [5, 7],
+        "Passes": [85, 78],
+        "Tackles": [45, 52],
+        "Interceptions": [25, 30],
+    }
+    example_df = pd.DataFrame(example_data)
+
+    # Convert to CSV
+    csv_buffer = io.StringIO()
+    example_df.to_csv(csv_buffer, sep=";", index=False)
+    csv_string = csv_buffer.getvalue()
+
+    return csv_string
+
+
+def radarchart_visualisations():
+    st.info(
+        "Ensure the input file is a CSV, and the first column should be the player name and it's not considered",
+        icon="ℹ️",
+    )
+    csv_string = example_radarchart_data()
+
+    # Download button for example file
+    st.download_button(
+        label="Download Example CSV",
+        data=csv_string,
+        file_name="radar_chart_example.csv",
+        mime="text/csv",
+        key="example_radarchart",
+    )
+    # Players shots location
+    col1, col2 = st.columns(2)
+
+    with col1:
+        group1_color = st.color_picker("Color", "#00f900", key="group1_color")
+
+    with col2:
+        group2_color = st.color_picker("Color", "#f90000", key="group2_color")
+
+    uploaded_file = st.file_uploader("Choose a file", key="radarchart_fileuploader")
+    if uploaded_file is not None:
+        data = pd.read_csv(uploaded_file, sep=";")
+        # st.button("Use this data", on_click=lambda: st.session_state.update(heatmap_data=dataframe))
+    else:
+        data = pd.DataFrame()
+
+    if data.empty:
+        no_data_message(message="No data available for this comparison")
+        return
+
+    print("data columns: ", data.columns)
+    params = list(data.columns)[1:]
+    print("params: ", params)
+    group_1 = data.iloc[0, 1:].tolist()
+    group_2 = data.iloc[1, 1:].tolist()
+    low = [0] * len(params)
+    high = [max(group_1[i], group_2[i]) for i in range(len(group_1))]
+
+    radar = Radarchart(
+        params=params,
+        group_1=group_1,
+        group_2=group_2,
+        low=low,
+        high=high,
+        group1_c=group1_color,
+        group2_c=group2_color,
+    )
+    fig, ax = radar.draw_v2()
+    st.pyplot(fig)
+    save_fig(fig=fig, file_name="radarchart.png", key="radarchart")
+
+
 def main():
     left_co, cent_co, last_co = st.columns(3)
-    filter1, filter2, filter3 = st.columns(3)
     script_dir = os.path.dirname(__file__)
     image_path = os.path.join(script_dir, "assets/images/logo_botola_insights_red.png")
     with cent_co:
         image = Image.open(image_path)
         st.image(image, width=150)
 
-    # with filter1:
-    #     competion_list = COMPETITIONS_LIST
-    #     competition = st.selectbox("Shoose a competition", competion_list, key="competition_principal")
-
-    # with filter2:
-    #     seasons_list = get_seasons_list_by_competition(cursor=cursor, competition=competition)
-    #     season = st.selectbox("Shoose a season", seasons_list, key="season_principal")
-
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
             "Heatmap",
             "Shootmap",
-            "Pizzachart",
             "Radarchart",
-            "Stackedbar",
+            "Stacked barchart",
             "Goal Location",
         ]
     )
@@ -538,18 +629,21 @@ def main():
     #     st.header("Pizzachart Visualization")
     #     pizzachart_visualisations()
 
-    # with tab4:
-    #     st.header("Radarchart Visualization")
+    with tab3:
+        st.header("Radarchart Visualization")
+        radarchart_visualisations()
 
     # with tab5:
     #     st.header("Stackedbar")
     #     stacked_barchart_vizualisations()
 
-    # with tab6:
-    # TODO: add a filter by the home or away goalkeeper
-    #     st.header("Goal Location")
-    #     (team, match) = goal_location_visualisations()
-    #     goal_keeper_vizualisations(team=team, match=match)
+    with tab5:
+        # TODO: separate between player and goalkeeper
+        # TODO: add filter by match
+        # TODO: possibility to upload multiple files
+        st.header("Goal Location")
+        goal_location_visualisations()
+        # goal_keeper_vizualisations(team=team, match=match)
 
 
 if __name__ == "__main__":
