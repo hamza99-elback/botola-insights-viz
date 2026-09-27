@@ -18,8 +18,8 @@ sys.path.append(project_root)
 from tools.json_tool import JsonTool
 from data_processing.shootmap_processor import ShootmapProcessor
 
-fm_rubik = FontManager('https://raw.githubusercontent.com/google/fonts/main/ofl/'
-                       'rubikmonoone/RubikMonoOne-Regular.ttf')
+# fm_rubik = FontManager('https://raw.githubusercontent.com/google/fonts/main/ofl/'
+#                        'rubikmonoone/RubikMonoOne-Regular.ttf')
 class ShootMap:
     def __init__(
         self,
@@ -72,7 +72,8 @@ class ShootMap:
         txt = self.ax.text(x=40, y=80, s='Raja shots\nversus MAT',
                     size=30,
                     # here i am using a downloaded font from google fonts instead of passing a fontdict
-                    fontproperties=fm_rubik.prop, color=self.pitch.line_color,
+                    # fontproperties=fm_rubik.prop, 
+                    color=self.pitch.line_color,
                     va='center', ha='center')
         if save_figure:
             plt.savefig('./shots.png', dpi=300, bbox_inches='tight', transparent=True)

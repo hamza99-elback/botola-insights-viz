@@ -385,9 +385,12 @@ def goal_location_visualisations():
         "xg",
     ]
     if home_value == "Home":
-        df_goal_location = df_team1[columns_to_keep]
+        df_goal_location = df_team1
     else:
-        df_goal_location = df_team2[columns_to_keep]
+        df_goal_location = df_team2
+    
+    df_goal_location = df_goal_location[df_goal_location["shotType"].isin(["save", "goal"])]
+    df_goal_location = df_goal_location[columns_to_keep]
     if df_goal_location.empty:
         no_data_message(message="No data available for this team")
         return
@@ -456,42 +459,39 @@ def goal_keeper_vizualisations(match, team):
 
 
 def stacked_barchart_vizualisations():
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2 = st.columns(2)
+
 
     with col1:
         col_team1 = st.color_picker("Color", "#00f900", key="col_team1")
-        col_team2 = st.color_picker("Color", "#000990", key="col_team2")
+        # home values
+        home1 = st.text_input("result for home team", key="home1")
+        home2 = st.text_input("possession", key="home2")
+        home3 = st.text_input("total shots", key="home3")
+        home4 = st.text_input("shots on target", key="home4")
+        home5 = st.text_input("shots off target", key="home5")
+        home6 = st.text_input("blocked shots", key="home6")
 
     with col2:
-        season = st.selectbox("Shoose Season", SEASONS_LIST, key="season_sbr")
-
-    with col3:
-        team = st.selectbox("Shoose a Team", TEAMS_LIST, key="team_sbr")
-
-    with col4:
-        match = st.selectbox(
-            "Shoose a Match",
-            get_matches_list(season=season, team=team),
-            key="match_sbr",
-        )
-
-    stacked_data = ""
-    columns = [col[0] for col in cursor.description]
-    data = [{col: val for col, val in zip(columns, row)} for row in stacked_data]
-    df_stacked = pd.DataFrame(data, columns=columns)
-    if df_stacked.empty:
+        col_team2 = st.color_picker("Color", "#000990", key="col_team2")
+        # away values
+        away1 = st.text_input("result for away team", key="away1")
+        away2 = st.text_input("possession", key="away2")
+        away3 = st.text_input("total shots", key="away3")
+        away4 = st.text_input("shots on target", key="away4")
+        away5 = st.text_input("shots off target", key="away5")
+        away6 = st.text_input("blocked shots", key="away6")
+    
+    home = [home1, home2, home3, home4, home5, home6]
+    away = [away1, away2, away3, away4, away5, away6]
+    
+    if any(val is None or val == "" for val in home) or any(val is None or val == "" for val in away):
         no_data_message(message="No data available for this match")
         return
-    home_data = list(df_stacked.loc[df_stacked["isHome"] == "YES"].to_records()[0])[3:]
-    away_data = list(df_stacked.loc[df_stacked["isHome"] == "NO"].to_records()[0])[3:]
-    home_data = [
-        float(home_data[_]) if _ == 1 else int(home_data[_])
-        for _ in range(len(home_data))
-    ]
-    away_data = [
-        float(home_data[_]) if _ == 1 else int(away_data[_])
-        for _ in range(len(away_data))
-    ]
+    
+    home_data = [float(val) for val in home]
+    away_data = [float(val) for val in away]
+
 
     data = {
         "home": home_data,
@@ -577,6 +577,11 @@ def radarchart_visualisations():
         no_data_message(message="No data available for this comparison")
         return
 
+    # Convert all columns except the first one (player names) to float
+    for col in data.columns[1:]:
+        data[col] = data[col].astype(str).str.replace(',', '.').str.replace('%', '').str.strip()
+        data[col] = data[col].astype(float)
+
     print("data columns: ", data.columns)
     params = list(data.columns)[1:]
     print("params: ", params)
@@ -584,6 +589,9 @@ def radarchart_visualisations():
     group_2 = data.iloc[1, 1:].tolist()
     low = [0] * len(params)
     high = [max(group_1[i], group_2[i]) for i in range(len(group_1))]
+
+    print("low: ", low)
+    print("high: ", high)
 
     radar = Radarchart(
         params=params,
@@ -633,9 +641,9 @@ def main():
         st.header("Radarchart Visualization")
         radarchart_visualisations()
 
-    # with tab5:
-    #     st.header("Stackedbar")
-    #     stacked_barchart_vizualisations()
+    with tab4:
+        st.header("Stackedbar")
+        stacked_barchart_vizualisations()
 
     with tab5:
         # TODO: separate between player and goalkeeper

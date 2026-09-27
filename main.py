@@ -81,6 +81,29 @@
 #     else:
 #         logging.info(f"No chart with the name {args.chart}")
     
+def generator():
+    for i in range(10):
+        yield i
+
+
+def file_generator(file_path):
+    with open(file_path, 'r') as f:
+        for line in f:
+            yield line.strip()
+
+
+def main():
+    gen = generator()
+    for value in gen:
+        print(value)
+
+def process_line(line):
+    # Process the line (e.g., print it, store it, etc.)
+    print(line)
+
+    file_gen = file_generator('data/sample.txt')
+    for line in file_gen:
+        process_line(line)
 
 
 if __name__=="__main__":
