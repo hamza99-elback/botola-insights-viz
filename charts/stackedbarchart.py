@@ -48,68 +48,22 @@ class StackedBarChart:
                 plt.Rectangle(
                     (0, self.y_pos),
                     home_val / total_val,
-                    0.6,
+                    0.2,
                     color=self.home_c,
-                    alpha=0.8,
+                    alpha=1,
                 )
             )
             self.ax.add_patch(
                 plt.Rectangle(
                     (home_val / total_val, self.y_pos),
                     away_val / total_val,
-                    0.6,
+                    0.2,
                     color=self.away_c,
                     alpha=1,
                 )
             )
 
-            # Calculate x-coordinate for placing item name
-            x_text = (home_val / total_val + away_val / total_val) / 2
-
-            # Add item name inside the rectangle with bold font
-            text = self.ax.text(
-                x_text,
-                self.y_pos + 0.25,
-                item_name,
-                ha="center",
-                va="center",
-                color="white",
-                fontsize=14,
-                fontweight="bold",
-                fontproperties=self.roboto,
-            )
-            # Add shadow effect
-            text.set_path_effects(
-                [patheffects.withStroke(linewidth=3, foreground="#121212")]
-            )
-            label_1 = self.ax.text(
-                0.06,
-                self.y_pos + 0.25,
-                f"{home_val}",
-                ha="left",
-                va="center",
-                color="white",
-                fontsize=14,
-                fontweight="bold",
-                fontproperties=self.roboto,
-            )
-            label_1.set_path_effects(
-                [patheffects.withStroke(linewidth=3, foreground="#121212")]
-            )
-            label_2 = self.ax.text(
-                1 - 0.06,
-                self.y_pos + 0.25,
-                f"{away_val}",
-                ha="right",
-                va="center",
-                color="white",
-                fontsize=14,
-                fontweight="bold",
-                fontproperties=self.roboto,
-            )
-            label_2.set_path_effects(
-                [patheffects.withStroke(linewidth=3, foreground="#121212")]
-            )
+            
             # Increase y position for the next rectangle with some space
             self.y_pos += 1
 

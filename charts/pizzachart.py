@@ -4,10 +4,10 @@ import numpy as np
 from mplsoccer import PyPizza, FontManager, grid
 from datetime import datetime
 
-fm_rubik = FontManager(
-    "https://raw.githubusercontent.com/google/fonts/main/ofl/"
-    "rubikmonoone/RubikMonoOne-Regular.ttf"
-)
+# fm_rubik = FontManager(
+#     "https://raw.githubusercontent.com/google/fonts/main/ofl/"
+#     "rubikmonoone/RubikMonoOne-Regular.ttf"
+# )
 
 
 class Pizzachart:

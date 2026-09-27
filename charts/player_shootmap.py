@@ -18,8 +18,8 @@ sys.path.append(project_root)
 from tools.json_tool import JsonTool
 from data_processing.shootmap_processor import ShootmapProcessor
 
-fm_rubik = FontManager('https://raw.githubusercontent.com/google/fonts/main/ofl/'
-                       'rubikmonoone/RubikMonoOne-Regular.ttf')
+# fm_rubik = FontManager('https://raw.githubusercontent.com/google/fonts/main/ofl/'
+#                        'rubikmonoone/RubikMonoOne-Regular.ttf')
 class ShootMap:
     def __init__(
         self,

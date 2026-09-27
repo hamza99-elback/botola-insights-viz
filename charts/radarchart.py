@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from mplsoccer import FontManager, Radar
 
-fm_rubik = FontManager(
-    "https://raw.githubusercontent.com/google/fonts/main/ofl/"
-    "rubikmonoone/RubikMonoOne-Regular.ttf"
-)
+# fm_rubik = FontManager(
+#     "https://raw.githubusercontent.com/google/fonts/main/ofl/"
+#     "rubikmonoone/RubikMonoOne-Regular.ttf"
+# )
 
 
 class Radarchart:
@@ -157,8 +157,11 @@ class Radarchart:
         player2_values = self.group_2
 
         # Font managers
-        URL4 = "https://raw.githubusercontent.com/googlefonts/roboto/main/src/hinted/Roboto-Thin.ttf"
-        roboto_thin = FontManager(URL4)
+        # URL4 = "https://raw.githubusercontent.com/googlefonts/roboto/main/src/hinted/Roboto-Thin.ttf"
+        # URL4 = "https://raw.githubusercontent.com/VadimDez/unity-game/master/Assets/Fonts/Roboto-Thin.ttf"
+        font_path = "C:/Users/hp/Documents/projects/botola-insights-viz/assets/fonts/roboto/Roboto-Thin.ttf"
+
+        roboto_thin = FontManager(f"file:///{font_path}")
 
         # Draw background rings
         rings_inner = self.radar.draw_circles(
@@ -208,9 +211,9 @@ class Radarchart:
         )
 
         # Add labels
-        range_labels = self.radar.draw_range_labels(
-            ax=self.ax, fontsize=25, fontproperties=roboto_thin.prop, color="white"
-        )
+        # range_labels = self.radar.draw_range_labels(
+        #     ax=self.ax, fontsize=25, fontproperties=roboto_thin.prop, color="white"
+        # )
         param_labels = self.radar.draw_param_labels(
             ax=self.ax, fontsize=22, fontproperties=roboto_thin.prop, color="white"
         )

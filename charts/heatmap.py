@@ -14,10 +14,10 @@ from scipy.ndimage import gaussian_filter
 
 from tools.json_tool import JsonTool
 
-fm_rubik = FontManager(
-    "https://raw.githubusercontent.com/google/fonts/main/ofl/"
-    "rubikmonoone/RubikMonoOne-Regular.ttf"
-)
+# fm_rubik = FontManager(
+#     "https://raw.githubusercontent.com/google/fonts/main/ofl/"
+#     "rubikmonoone/RubikMonoOne-Regular.ttf"
+# )
 
 
 class Heatmap:
