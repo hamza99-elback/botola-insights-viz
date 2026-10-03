@@ -482,8 +482,8 @@ def stacked_barchart_vizualisations():
         away5 = st.text_input("shots off target", key="away5")
         away6 = st.text_input("blocked shots", key="away6")
     
-    home = [home1, home2, home3, home4, home5, home6]
-    away = [away1, away2, away3, away4, away5, away6]
+    home = [home6, home5, home4, home3, home2, home1]
+    away = [away6, away5, away4, away3, away2, away1]
     
     if any(val is None or val == "" for val in home) or any(val is None or val == "" for val in away):
         no_data_message(message="No data available for this match")
