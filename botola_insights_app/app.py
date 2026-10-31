@@ -14,6 +14,7 @@ import streamlit as st
 from mplsoccer import Pitch, VerticalPitch
 from PIL import Image
 
+from bi_studio.page import bi_studio_page
 from charts.heatmap import Heatmap
 from charts.pizzachart import Pizzachart
 from charts.radarchart import Radarchart
@@ -607,14 +608,7 @@ def radarchart_visualisations():
     save_fig(fig=fig, file_name="radarchart.png", key="radarchart")
 
 
-def main():
-    left_co, cent_co, last_co = st.columns(3)
-    script_dir = os.path.dirname(__file__)
-    image_path = os.path.join(script_dir, "assets/images/logo_botola_insights_red.png")
-    with cent_co:
-        image = Image.open(image_path)
-        st.image(image, width=150)
-
+def charts_page():
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
             "Heatmap",
@@ -652,6 +646,22 @@ def main():
         st.header("Goal Location")
         goal_location_visualisations()
         # goal_keeper_vizualisations(team=team, match=match)
+
+
+PAGES = {
+    "Charts": charts_page,
+    "BI Studio": bi_studio_page,
+}
+
+
+def main():
+    st.set_page_config(page_title="Botola Insights", layout="wide")
+    script_dir = os.path.dirname(__file__)
+    image_path = os.path.join(script_dir, "assets/images/logo_botola_insights_red.png")
+    with st.sidebar:
+        st.image(Image.open(image_path), width=150)
+        page = st.radio("Section", list(PAGES), key="nav_section")
+    PAGES[page]()
 
 
 if __name__ == "__main__":

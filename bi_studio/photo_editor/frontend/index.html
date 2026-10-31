@@ -1,0 +1,239 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; overflow: hidden;
+               font-family: "Source Sans Pro", system-ui, sans-serif; }
+  canvas { display: block; width: 100%; touch-action: none; cursor: grab; border-radius: 6px; }
+  canvas.grabbing { cursor: grabbing; }
+  canvas.resize-nwse { cursor: nwse-resize; }
+  canvas.resize-nesw { cursor: nesw-resize; }
+  #hint { font-size: 12px; opacity: 0.7; margin: 6px 0 2px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hint">Drag to move · scroll or drag a corner to resize · double-click to reset</div>
+<script>
+// Drag-and-zoom photo editor for BI Studio.
+// Talks to Streamlit with the custom-component postMessage protocol (no build step needed).
+// Photo placement mirrors bi_studio.fields.Placement.box() so the editor matches the render.
+
+const Streamlit = {
+  send(type, data) { window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type }, data), "*"); },
+  ready() { this.send("streamlit:componentReady", { apiVersion: 1 }); },
+  setHeight(h) { this.send("streamlit:setFrameHeight", { height: h }); },
+  setValue(v) { this.send("streamlit:setComponentValue", { value: v, dataType: "json" }); },
+};
+
+const MARGIN = 0.18;          // room around the post (fraction of post width) to see/grab the overflow
+const HANDLE = 7;             // corner handle half-size, css px
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+let args = null;              // last args from Python
+let img = null, imageId = null;
+let state = { zoom: 1, x: 0, y: 0 };
+let drag = null;              // { mode: "pan" | "resize", ... } while the pointer is down
+let wheelTimer = null;
+let lastHeight = 0;
+
+// ---------------------------------------------------------------- geometry (post pixels)
+function place(s) {
+  const p = args.placement;
+  const ph = Math.max(p.min_height, p.base_height * s.zoom);
+  const pw = args.img_w * ph / args.img_h;
+  return { left: p.anchor[0] - p.pivot[0] * pw + s.x, top: p.anchor[1] - p.pivot[1] * ph + s.y, w: pw, h: ph };
+}
+function offsetsFor(left, top, pw, ph) {   // inverse of place(): x / y that put the photo at left / top
+  const p = args.placement;
+  return { x: left - (p.anchor[0] - p.pivot[0] * pw), y: top - (p.anchor[1] - p.pivot[1] * ph) };
+}
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+function clampState(s) {
+  const L = args.limits;
+  return { zoom: clamp(s.zoom, L.zoom[0], L.zoom[1]), x: clamp(s.x, L.x[0], L.x[1]), y: clamp(s.y, L.y[0], L.y[1]) };
+}
+
+// ---------------------------------------------------------------- view (post <-> css px)
+function view() {
+  const [PW, PH] = args.post, m = MARGIN * PW;
+  const cssW = canvas.clientWidth || document.body.clientWidth;
+  const s = cssW / (PW + 2 * m);
+  return { s, m, cssW, cssH: (PH + 2 * m) * s };
+}
+const toCss = (v, px, py) => [(px + v.m) * v.s, (py + v.m) * v.s];
+function toPost(ev) {
+  const r = canvas.getBoundingClientRect(), v = view();
+  return { x: (ev.clientX - r.left) / v.s - v.m, y: (ev.clientY - r.top) / v.s - v.m };
+}
+
+function layout() {
+  if (!args) return;
+  const v = view(), dpr = window.devicePixelRatio || 1;
+  canvas.style.height = v.cssH + "px";
+  canvas.width = Math.round(v.cssW * dpr);
+  canvas.height = Math.round(v.cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  draw();
+  const h = Math.ceil(document.body.scrollHeight);
+  if (h !== lastHeight) { lastHeight = h; Streamlit.setHeight(h); }
+}
+
+// ---------------------------------------------------------------- drawing
+function draw() {
+  if (!args) return;
+  const v = view(), [PW, PH] = args.post;
+  ctx.clearRect(0, 0, v.cssW, v.cssH);
+  ctx.fillStyle = "#0b1220";
+  ctx.fillRect(0, 0, v.cssW, v.cssH);
+
+  const b = place(state);
+  const [bx, by] = toCss(v, b.left, b.top), bw = b.w * v.s, bh = b.h * v.s;
+  const [px0, py0] = toCss(v, 0, 0), pw = PW * v.s, ph = PH * v.s;
+
+  ctx.fillStyle = args.navy;                       // post background where the photo doesn't reach
+  ctx.fillRect(px0, py0, pw, ph);
+  if (img && img.complete) {
+    ctx.globalAlpha = 0.3;                         // overflow outside the post, dimmed
+    ctx.drawImage(img, bx, by, bw, bh);
+    ctx.globalAlpha = 1;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px0, py0, pw, ph); ctx.clip();
+    ctx.drawImage(img, bx, by, bw, bh);
+    ctx.restore();
+  }
+
+  for (const g of args.boxes || []) {              // safe areas
+    const [gx0, gy0] = toCss(v, g[0], g[1]), [gx1, gy1] = toCss(v, g[2], g[3]);
+    ctx.fillStyle = "rgba(255, 0, 80, 0.16)";
+    ctx.fillRect(gx0, gy0, gx1 - gx0, gy1 - gy0);
+    ctx.strokeStyle = "rgba(255, 0, 80, 0.85)"; ctx.lineWidth = 1.5;
+    ctx.strokeRect(gx0, gy0, gx1 - gx0, gy1 - gy0);
+  }
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)"; ctx.lineWidth = 1;   // post frame
+  ctx.strokeRect(px0 + 0.5, py0 + 0.5, pw - 1, ph - 1);
+
+  ctx.setLineDash([5, 4]);                         // photo outline + corner handles
+  ctx.strokeStyle = "rgba(25, 183, 244, 0.9)";
+  ctx.strokeRect(bx, by, bw, bh);
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#19b7f4";
+  for (const [cx, cy] of corners(bx, by, bw, bh)) ctx.fillRect(cx - HANDLE, cy - HANDLE, 2 * HANDLE, 2 * HANDLE);
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.85)";     // current values
+  ctx.font = "12px system-ui, sans-serif";
+  ctx.fillText(`zoom ${state.zoom.toFixed(2)}   x ${Math.round(state.x)}   y ${Math.round(state.y)}`, 8, 16);
+}
+const corners = (x, y, w, h) => [[x, y], [x + w, y], [x, y + h], [x + w, y + h]];
+
+function cornerAt(ev) {   // index of the handle under the pointer, or -1
+  const r = canvas.getBoundingClientRect(), v = view(), b = place(state);
+  const [bx, by] = toCss(v, b.left, b.top);
+  const cs = corners(bx, by, b.w * v.s, b.h * v.s);
+  const mx = ev.clientX - r.left, my = ev.clientY - r.top;
+  return cs.findIndex(([cx, cy]) => Math.abs(mx - cx) <= HANDLE + 4 && Math.abs(my - cy) <= HANDLE + 4);
+}
+
+// ---------------------------------------------------------------- editing
+function zoomAbout(p, zoom) {   // change zoom keeping the post point p under the cursor
+  const b = place(state);
+  const u = (p.x - b.left) / b.w, w = (p.y - b.top) / b.h;
+  const next = clampState({ ...state, zoom });
+  const nb = place({ ...next, x: 0, y: 0 });
+  const o = offsetsFor(p.x - u * nb.w, p.y - w * nb.h, nb.w, nb.h);
+  state = clampState({ zoom: next.zoom, x: o.x, y: o.y });
+}
+
+function commit() {
+  clearTimeout(wheelTimer);
+  wheelTimer = null;   // renders from Python may update the state again
+  state ={ zoom: Math.round(state.zoom * 100) / 100, x: Math.round(state.x), y: Math.round(state.y) };
+  draw();
+  Streamlit.setValue({ zoom: state.zoom, x: state.x, y: state.y, seq: Date.now() });
+}
+
+canvas.addEventListener("pointerdown", (ev) => {
+  if (!args) return;
+  canvas.setPointerCapture(ev.pointerId);
+  const p = toPost(ev), c = cornerAt(ev), b = place(state);
+  if (c >= 0) {   // resize: the opposite corner stays where it is
+    const fx = c % 2 === 0 ? b.left + b.w : b.left, fy = c < 2 ? b.top + b.h : b.top;
+    drag = { mode: "resize", fx, fy, moved: false };
+  } else {
+    drag = { mode: "pan", p0: p, s0: { ...state }, moved: false };
+    canvas.classList.add("grabbing");
+  }
+});
+
+canvas.addEventListener("pointermove", (ev) => {
+  if (!args) return;
+  if (!drag) {   // cursor feedback over handles
+    const c = cornerAt(ev);
+    canvas.className = c < 0 ? "" : (c === 0 || c === 3 ? "resize-nwse" : "resize-nesw");
+    return;
+  }
+  const p = toPost(ev);
+  if (drag.mode === "pan") {
+    state = clampState({ ...state, x: drag.s0.x + p.x - drag.p0.x, y: drag.s0.y + p.y - drag.p0.y });
+  } else {
+    const aspect = args.img_w / args.img_h;
+    let w = Math.max(Math.abs(p.x - drag.fx), Math.abs(p.y - drag.fy) * aspect, 20);
+    const zoom = clamp(Math.max(args.placement.min_height, w / aspect) / args.placement.base_height,
+                       args.limits.zoom[0], args.limits.zoom[1]);
+    const nb = place({ zoom, x: 0, y: 0 });
+    const left = p.x < drag.fx ? drag.fx - nb.w : drag.fx;
+    const top = p.y < drag.fy ? drag.fy - nb.h : drag.fy;
+    const o = offsetsFor(left, top, nb.w, nb.h);
+    state = clampState({ zoom, x: o.x, y: o.y });
+  }
+  drag.moved = true;
+  draw();
+});
+
+function endDrag() {
+  if (drag && drag.moved) commit();
+  drag = null;
+  canvas.classList.remove("grabbing");
+}
+canvas.addEventListener("pointerup", endDrag);
+canvas.addEventListener("pointercancel", endDrag);
+
+canvas.addEventListener("wheel", (ev) => {
+  if (!args) return;
+  ev.preventDefault();
+  zoomAbout(toPost(ev), state.zoom * Math.exp(-ev.deltaY * 0.0015));
+  draw();
+  clearTimeout(wheelTimer);
+  wheelTimer = setTimeout(commit, 350);   // send once the wheel stops
+}, { passive: false });
+
+canvas.addEventListener("dblclick", () => {
+  if (!args) return;
+  state = clampState({ ...args.defaults });
+  commit();
+});
+
+// ---------------------------------------------------------------- Streamlit -> editor
+window.addEventListener("message", (ev) => {
+  if (!ev.data || ev.data.type !== "streamlit:render") return;
+  args = ev.data.args;
+  const theme = ev.data.theme;
+  if (theme && theme.textColor) document.getElementById("hint").style.color = theme.textColor;
+  if (args.image_id !== imageId) {
+    imageId = args.image_id;
+    img = new Image();
+    img.onload = draw;
+    img.src = args.image;
+  }
+  if (!drag && !wheelTimer) state = { zoom: args.zoom, x: args.x, y: args.y };
+  layout();
+});
+window.addEventListener("resize", layout);
+
+Streamlit.ready();
+</script>
+</body>
+</html>
