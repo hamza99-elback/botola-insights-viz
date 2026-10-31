@@ -1,0 +1,19 @@
+{
+  "_help": "Add a club: drop its transparent PNG in assets/crests/ and add an entry here. color = accent line on team-ranking cards (RGB). crest_zoom / crest_focus_y = default crop inside the badge shape (1.18 / 0.5 suits most crests).",
+  "WYDAD AC":      {"crest": "wac.png",  "color": [225, 40, 45],  "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "AS FAR":        {"crest": "far.png",  "color": [40, 150, 70],  "crest_zoom": 1.6,  "crest_focus_y": 0.52},
+  "MAS DE FES":    {"crest": "mas.png",  "color": [240, 210, 40], "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "RS BERKANE":    {"crest": "rsb.png",  "color": [240, 130, 30], "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "FUS RABAT":     {"crest": "fus.png",  "color": [225, 40, 45],  "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "WYDAD TEMARA":  {"crest": "wst.png",  "color": [50, 110, 220], "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "KAC MARRAKECH": {"crest": "kacm.png", "color": [150, 40, 40],  "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "DH EL JADIDI":  {"crest": "dhj.png",  "color": [40, 150, 70],  "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "RAJA CA":       {"crest": "rca.png",  "color": [20, 140, 60],  "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "CODM MEKNES":   {"crest": "codm.png", "color": [210, 30, 40],  "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "HUS AGADIR":    {"crest": "husa.png", "color": [210, 30, 40],  "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "IR TANGER":     {"crest": "irt.png",  "color": [40, 110, 200], "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "MA TETOUAN":    {"crest": "mat.png",  "color": [200, 30, 40],  "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "RCA ZEMAMRA":   {"crest": "rcaz.png", "color": [40, 120, 210], "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "US AMAL TIZNIT":{"crest": "usat.png", "color": [90, 160, 220], "crest_zoom": 1.18, "crest_focus_y": 0.5},
+  "UTS RABAT":     {"crest": "uts.png",  "color": [235, 180, 30], "crest_zoom": 1.18, "crest_focus_y": 0.5}
+}
