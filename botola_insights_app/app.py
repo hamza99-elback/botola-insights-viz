@@ -3,7 +3,6 @@ import sys
 import uuid
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import datetime
 import io
 import json
 import logging
@@ -23,27 +22,8 @@ from charts.shot_goal_location import ShotGoalLocation
 from charts.stackedbarchart import StackedBarChart
 from data_processing.shootmap_processor import ShootmapProcessor
 
-# TODO: add Season Filter in all the queries
-# TODO: Isolate all queries results in a separate file
-try:
-    # Make connection with Azure Database
-    CONN = ""
-except Exception as e:
-    print("Error in establishing connection with Azure Database:", str(e))
-
-
-try:
-    now = datetime.datetime.now()
-    now_str = now.strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"./../logs/app_{now_str}.log"
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        filename=filename,
-        filemode="w",
-    )
-except Exception as e:
-    print("error in configuring logging")
+# Console only: Streamlit Community Cloud shows it in "Manage app"
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 random.seed(42)
 

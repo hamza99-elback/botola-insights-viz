@@ -1,8 +1,10 @@
+import os
 from datetime import datetime
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from mplsoccer import FontManager, Radar
+from matplotlib.font_manager import FontProperties
+from mplsoccer import Radar
 
 # fm_rubik = FontManager(
 #     "https://raw.githubusercontent.com/google/fonts/main/ofl/"
@@ -156,12 +158,8 @@ class Radarchart:
         player1_values = self.group_1
         player2_values = self.group_2
 
-        # Font managers
-        # URL4 = "https://raw.githubusercontent.com/googlefonts/roboto/main/src/hinted/Roboto-Thin.ttf"
-        # URL4 = "https://raw.githubusercontent.com/VadimDez/unity-game/master/Assets/Fonts/Roboto-Thin.ttf"
-        font_path = "C:/Users/hp/Documents/projects/botola-insights-viz/assets/fonts/roboto/Roboto-Thin.ttf"
-
-        roboto_thin = FontManager(f"file:///{font_path}")
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        roboto_thin = FontProperties(fname=os.path.join(project_root, "assets", "fonts", "roboto", "Roboto-Thin.ttf"))
 
         # Draw background rings
         rings_inner = self.radar.draw_circles(
@@ -212,10 +210,10 @@ class Radarchart:
 
         # Add labels
         # range_labels = self.radar.draw_range_labels(
-        #     ax=self.ax, fontsize=25, fontproperties=roboto_thin.prop, color="white"
+        #     ax=self.ax, fontsize=25, fontproperties=roboto_thin, color="white"
         # )
         param_labels = self.radar.draw_param_labels(
-            ax=self.ax, fontsize=22, fontproperties=roboto_thin.prop, color="white"
+            ax=self.ax, fontsize=22, fontproperties=roboto_thin, color="white"
         )
 
         if save_figure:
