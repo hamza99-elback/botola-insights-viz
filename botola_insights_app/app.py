@@ -14,6 +14,7 @@ from mplsoccer import Pitch, VerticalPitch
 from PIL import Image
 
 from bi_studio.page import bi_studio_page
+from botola_insights_app.auth import logout_button, require_login
 from charts.heatmap import Heatmap
 from charts.pizzachart import Pizzachart
 from charts.radarchart import Radarchart
@@ -638,9 +639,11 @@ def main():
     st.set_page_config(page_title="Botola Insights", layout="wide")
     script_dir = os.path.dirname(__file__)
     image_path = os.path.join(script_dir, "assets/images/logo_botola_insights_red.png")
+    require_login(logo=image_path)
     with st.sidebar:
         st.image(Image.open(image_path), width=150)
         page = st.radio("Section", list(PAGES), key="nav_section")
+        logout_button()
     PAGES[page]()
 
 
