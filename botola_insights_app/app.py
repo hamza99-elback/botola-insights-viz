@@ -639,7 +639,8 @@ def main():
     st.set_page_config(page_title="Botola Insights", layout="wide")
     script_dir = os.path.dirname(__file__)
     image_path = os.path.join(script_dir, "assets/images/logo_botola_insights_red.png")
-    require_login(logo=image_path)
+    if not require_login(logo=image_path):
+        return
     with st.sidebar:
         st.image(Image.open(image_path), width=150)
         page = st.radio("Section", list(PAGES), key="nav_section")

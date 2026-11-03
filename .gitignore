@@ -16,3 +16,5 @@ secrets.toml
 # BI Studio assets and config are source files, not generated output
 !bi_studio/teams.json
 !bi_studio/assets/**/*.png
+# personal working notes, kept out of the public repo
+personal_notes.txt

@@ -50,14 +50,19 @@ def _credentials() -> tuple[str, str] | None:
         return None
 
 
-def require_login(logo: str | None = None):
-    """Stop the page here until the user has logged in. No credentials configured = no access."""
+def require_login(logo: str | None = None) -> bool:
+    """True once the user has logged in; until then draws the login form and returns False.
+
+    The caller must stop drawing the page when this returns False. No credentials configured =
+    no access. Returns instead of calling st.stop(): Streamlit's health check (used by Community
+    Cloud) only counts a script run as healthy if the script ends normally.
+    """
     if st.session_state.get("logged_in"):
-        return
+        return True
     credentials = _credentials()
     if credentials is None:
         st.error("Login is not configured: add the [auth_basic] secrets (see .streamlit/secrets.toml.example).")
-        st.stop()
+        return False
 
     # Keeps the columns out of the page's first position: st.tabs replacing a block there can
     # crash the browser to a white page after login (Streamlit reuses the old block's children).
@@ -77,7 +82,7 @@ def require_login(logo: str | None = None):
                 st.session_state["logged_in"] = True
                 st.rerun()
             st.error("Wrong username or password.")
-    st.stop()
+    return False
 
 
 def logout_button():
