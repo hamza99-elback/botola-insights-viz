@@ -3,11 +3,12 @@
     from bi_studio.page import bi_studio_page
     bi_studio_page()
 
-The page has one tab per template (see `bi_studio/templates/`). Each tab's form is built
-from the template's declared fields, so templates contain no Streamlit code.
+The page opens on a catalog: templates grouped by category, each card with a thumbnail rendered
+from the template's defaults. Choosing one opens its editor (form on the left, preview on the
+right); only that template runs, so adding templates doesn't slow the page down. Each form is
+built from the template's declared fields, so templates contain no Streamlit code.
 
-Speed: Streamlit reruns the whole page (every tab) on each interaction, so finished posts
-are cached by their inputs. Only the post whose inputs changed is rendered again.
+Finished posts are cached by their inputs: only a post whose inputs changed is rendered again.
 """
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ import pandas as pd
 import streamlit as st
 from PIL import Image, ImageOps
 
-from .brand import load_teams
+from .brand import background, load_teams
 from .fields import Color, Photo, Row, Table, Team, Template, Text
 from .photo_editor import photo_editor
 from .primitives import guides
@@ -31,6 +32,9 @@ from .templates import load_templates_with_errors
 MAX_PHOTO_SIDE = 3600   # enough for zoom 2.5 on a full-height photo; bigger uploads are shrunk
 EDITOR_PHOTO_SIDE = 1000
 PREVIEW_WIDTH = 900
+THUMB_WIDTH = 360
+CATALOG_KEY = "bi_template"   # session key of the template being edited (None = catalog)
+SAMPLE_PHOTO = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "samples", "ganvoula.jpg")
 
 
 def _wide(fn, *args, **kwargs):
@@ -231,6 +235,31 @@ def _field(f, prefix: str, team_names: list[str], values: dict) -> dict:
     raise TypeError(f"Unknown field type: {type(f).__name__}")
 
 
+def _sample_values(t: Template) -> dict:
+    """Render arguments made from the fields' defaults (used for the catalog thumbnails)."""
+    photo = Image.open(SAMPLE_PHOTO).convert("RGB") if os.path.exists(SAMPLE_PHOTO) else background()
+    values = {}
+    for f in t.fields:
+        for g in (f.fields if isinstance(f, Row) else (f,)):
+            if isinstance(g, Table):
+                values[g.key] = [dict(r) for r in g.default_rows]
+            elif isinstance(g, Photo):
+                values[g.key] = photo
+                values[f"{g.key}_zoom"], values[f"{g.key}_x"], values[f"{g.key}_y"] = g.zoom[2], g.x[2], g.y[2]
+            else:
+                values[g.key] = g.default
+    return values
+
+
+@st.cache_resource(show_spinner=False)
+def _thumbnail(template_key: str, code_version: tuple, _template: Template) -> bytes | None:
+    """Small JPEG of the template with its default values, or None if it can't be rendered."""
+    try:
+        return _jpeg(_template.render(**_sample_values(_template)), width=THUMB_WIDTH, quality=85)
+    except Exception:  # noqa: BLE001 - a broken default must not break the catalog
+        return None
+
+
 def _missing(t: Template, values: dict) -> str | None:
     """Message to show instead of the preview while required input is missing."""
     for f in t.fields:
@@ -245,8 +274,6 @@ def _missing(t: Template, values: dict) -> str | None:
 def _template_ui(t: Template, team_names: list[str]):
     left, right = st.columns([1, 1], gap="large")
     with left:
-        if t.description:
-            st.caption(t.description)
         values = {}
         for f in t.fields:
             values.update(_field(f, t.key, team_names, values))
@@ -269,6 +296,43 @@ def _template_ui(t: Template, team_names: list[str]):
                            mime="image/png", type="primary", key=f"{t.key}_download")
 
 
+# --------------------------------------------------------------------------- catalog
+def _open(key: str | None):
+    st.session_state[CATALOG_KEY] = key
+
+
+def _catalog(templates: list[Template]):
+    order = {}
+    for t in templates:  # categories in the order of their first template
+        order.setdefault(t.category, t.order)
+    categories = ["All"] + sorted(order, key=order.get)
+    chosen = st.radio("Category", categories, horizontal=True, key="bi_category", label_visibility="collapsed")
+    shown = [t for t in templates if chosen == "All" or t.category == chosen]
+    version = _code_version()
+    with st.spinner("Preparing template previews..."):  # only slow the first time; thumbnails are cached
+        thumbs = {t.key: _thumbnail(t.key, version, _template=t) for t in shown}
+    per_row = 4
+    for i in range(0, len(shown), per_row):
+        for col, t in zip(st.columns(per_row, gap="medium"), shown[i:i + per_row]):
+            with col, st.container(border=True):
+                if thumbs[t.key]:
+                    _wide(st.image, thumbs[t.key])
+                else:
+                    st.caption("(no preview)")
+                st.markdown(f"**{t.name}**")
+                st.caption(f"{t.category} · {t.description}" if t.description else t.category)
+                _wide(st.button, "Create", key=f"open_{t.key}", on_click=_open, args=(t.key,), type="primary")
+
+
+def _editor_header(t: Template):
+    back, title = st.columns([1, 5])
+    with back:
+        st.button("← All templates", key="back_to_catalog", on_click=_open, args=(None,))
+    with title:
+        st.subheader(t.name)
+        st.caption(f"{t.category} · {t.description}" if t.description else t.category)
+
+
 # --------------------------------------------------------------------------- entry
 def bi_studio_page():
     st.header("BI Studio")
@@ -280,6 +344,9 @@ def bi_studio_page():
                  "If the code looks right, restart Streamlit (Ctrl+C, then `streamlit run streamlit_app.py`).")
     if not templates:
         return
-    for tab, t in zip(st.tabs([t.name for t in templates]), templates):
-        with tab:
-            _template_ui(t, team_names)
+    current = {t.key: t for t in templates}.get(st.session_state.get(CATALOG_KEY))
+    if current is None:
+        _catalog(templates)
+        return
+    _editor_header(current)
+    _template_ui(current, team_names)

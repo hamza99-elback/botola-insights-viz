@@ -3,7 +3,8 @@
 Generates the Botola Insights Instagram posts (1080 x 1350 PNG) from values typed into a table.
 Runs fully offline, with no AI service or subscription needed.
 
-Opened from the **BI Studio** section in the app sidebar:
+Opened from the **BI Studio** section in the app sidebar. It starts on a catalog of templates grouped by
+category (**Match**, **Rankings**); **Create** opens a template's editor, **← All templates** goes back:
 
 ```bash
 streamlit run streamlit_app.py
@@ -16,6 +17,8 @@ streamlit run streamlit_app.py
 | Team ranking | `render_team_ranking` |
 | Player top 5 | `render_top5` |
 | Match stats | `render_match_stats` |
+| Player stats | `render_player_stats` |
+| Player list | `render_player_list` |
 
 The renderers can be used without the UI (e.g. for batch generation):
 
@@ -72,6 +75,36 @@ stacked bar per stat (home share = home / (home + away)).
 - **League logo (top-left):** drawn when `bi_studio/assets/league_logo.png` exists
   (transparent PNG, white logo). Skipped otherwise.
 
+## Player stats
+
+One player's numbers in a match: photo on the right, name and stats on the left, score and rating at the bottom.
+Everything is editable in the form:
+
+- **Name and title:** first name (light), last name (bold) and a title such as "PLAYER BY NUMBERS".
+  Long names shrink to fit the column.
+- **Colors:** "Title color" (default gold `#DFC448`) and "Stat numbers color" (default red `#C4313C`).
+- **Stats:** up to 10 rows of value + label, printed as typed (`0.75`, `85`, `7 (5)`). Values are
+  right-aligned; a wider value moves the labels to the right.
+- **Score:** home and away teams (crests from `teams.json`) and the two scores.
+- **Rating:** the number and its label (default "Sofascore Rating"). The badge color follows the rating
+  (approximate Sofascore scale: 9+ dark blue, 8+ blue, 7+ green, 6.5+ yellow, 6+ orange, below red) unless
+  you tick "Custom rating color". Leave the rating empty to hide the badge.
+- **Photo:** positioned with the photo editor. Zoom 1.0 = as tall as the post; it fades into the background
+  behind the text column, and its edges blend in when zoomed out.
+
+## Player list
+
+Top 10 players for one stat: list panel on the left (the first row is highlighted), photo on the right.
+
+- **Title, subtitle and the three column headers** (player / team / stat), all editable.
+- **Players:** up to 10 rows of first name, last name, team (crest from `teams.json`) and value, in order.
+  Long names and values shrink to fit.
+- **Footnote:** the small line above the tagline (e.g. "* z-value shows ..."). Leave it empty to hide it.
+- **Photo:** positioned with the photo editor; it only shows right of the list panel.
+- **Optional logos:** `bi_studio/assets/league_logo.png` (top-right) and `bi_studio/assets/partner_logo.png`
+  (bottom-right, next to the Botola Insights logo) are drawn when the files exist.
+- The big text uses Bebas Neue squeezed to 86% width to match the design's narrower letters.
+
 ## Adjusting a crest (Team ranking)
 
 Crests are zoomed and clipped into the badge shape. Each team has default settings in `teams.json`. To change one post only, use the table columns:
@@ -94,7 +127,9 @@ The club then appears in the Team dropdown of both tables.
 ## Adding a template
 
 Create one file in `bi_studio/templates/` (e.g. `match_result.py`) with a render function and
-a `TEMPLATE` declaration. It appears as a new tab in BI Studio. No UI code is needed.
+a `TEMPLATE` declaration. It appears in the BI Studio catalog, under its `category`, with a
+thumbnail rendered from the fields' default values. No UI code is needed. A new category name
+creates a new filter in the catalog.
 
 ```python
 from PIL import Image, ImageDraw
@@ -116,8 +151,10 @@ def render_match_result(title: str, rows: list[dict]) -> Image.Image:
 
 TEMPLATE = Template(
     key="match_result",                 # unique
-    name="Match result",                # tab label
-    order=30,                           # tab position
+    name="Match result",                # card title
+    order=30,                           # position in the catalog
+    category="Match",                   # catalog group: "Match", "Rankings", or a new one
+    description="Final score and key stats of a match.",   # one line on the catalog card
     render=render_match_result,
     filename=lambda v: slug(v["title"]),
     fields=[                            # each field's key = a render() argument
@@ -161,7 +198,7 @@ end with "…" instead of overflowing.
 - `bi_studio/fields.py`: the field types a template declares
 - `bi_studio/brand.py`: post size, colors, tagline, fonts, logo, background, clubs
 - `bi_studio/primitives.py`: shared drawing helpers (`fit_text`, letter-spaced text, tagline, guides)
-- `bi_studio/page.py`: the Streamlit page (`bi_studio_page()`), builds each tab from the template's fields; caches finished posts
+- `bi_studio/page.py`: the Streamlit page (`bi_studio_page()`): template catalog, and an editor built from the chosen template's fields; caches finished posts and thumbnails
 - `bi_studio/photo_editor/`: the drag-and-zoom photo editor (Streamlit component, plain HTML/JS, no build step)
 - `bi_studio/teams.json`: clubs, crests, colors, crest crop defaults
 - `bi_studio/assets/`: fonts (Montserrat, Bebas Neue, SIL Open Font License), logo, background, crests

@@ -1,7 +1,7 @@
 """Drawing helpers shared by the templates (Pillow only)."""
 from __future__ import annotations
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 from .brand import TAGLINE, W, H, font
 
@@ -86,6 +86,65 @@ def blur_composite(canvas: Image.Image, layer: Image.Image, xy: tuple[int, int],
     x1, y1 = min(canvas.width, x + padded.width), min(canvas.height, y + padded.height)
     if x0 < x1 and y0 < y1:
         canvas.alpha_composite(padded.crop((x0 - x, y0 - y, x1 - x, y1 - y)), (x0, y0))
+
+
+def blend_photo(canvas: Image.Image, photo: Image.Image, box: tuple[int, int, int, int],
+                fade: Image.Image | None = None, soft_edge: int = 30) -> Image.Image:
+    """Blend photo (any size) into canvas at box = (left, top, width, height) from Placement.box().
+
+    Only the part inside the canvas is resized. fade: optional full-canvas "L" mask of the photo's
+    opacity (e.g. hidden behind a text column). When the photo doesn't cover the whole canvas, its
+    inner edges are softened over `soft_edge` px; edges on the canvas border stay sharp.
+    Returns a new RGB image.
+    """
+    cw, ch = canvas.size
+    canvas = canvas.convert("RGB")
+    left, top, pw, ph = box
+    x0, y0, x1, y1 = max(0, left), max(0, top), min(cw, left + pw), min(ch, top + ph)
+    if x0 >= x1 or y0 >= y1:
+        return canvas
+    sx, sy = photo.width / pw, photo.height / ph
+    src = ((x0 - left) * sx, (y0 - top) * sy, (x1 - left) * sx, (y1 - top) * sy)
+    layer = canvas.copy()
+    layer.paste(photo.resize((x1 - x0, y1 - y0), Image.LANCZOS, box=src), (x0, y0))
+    mask = Image.new("L", (cw, ch), 0)
+    mask.paste(fade.crop((x0, y0, x1, y1)) if fade else 255, (x0, y0, x1, y1))
+    if (x0, y0, x1, y1) != (0, 0, cw, ch) and soft_edge:
+        e = soft_edge
+        inset = (x0 + (e if x0 > 0 else 0), y0 + (e if y0 > 0 else 0),
+                 x1 - 1 - (e if x1 < cw else 0), y1 - 1 - (e if y1 < ch else 0))
+        pad = 2 * e  # blur on a padded canvas so the border sides really stay at full opacity
+        edge = Image.new("L", (cw + 2 * pad, ch + 2 * pad), 0)
+        ImageDraw.Draw(edge).rectangle(
+            (inset[0] + (pad if x0 > 0 else 0), inset[1] + (pad if y0 > 0 else 0),
+             inset[2] + (pad if x1 < cw else 2 * pad), inset[3] + (pad if y1 < ch else 2 * pad)), fill=255)
+        edge = edge.filter(ImageFilter.GaussianBlur(e * 0.6)).crop((pad, pad, pad + cw, pad + ch))
+        mask = ImageChops.multiply(mask, edge)
+    return Image.composite(layer, canvas, mask)
+
+
+def draw_condensed(canvas: Image.Image, xy, text: str, f: ImageFont.FreeTypeFont, fill, condense: float,
+                   anchor: str = "ls", stroke: int = 0):
+    """Draw text squeezed horizontally to `condense` x its width (same height), on an RGBA canvas.
+
+    anchor: "ls" (x = left) or "rs" (x = right) on the baseline y. Measure with condensed_len().
+    """
+    if not text:
+        return
+    d = ImageDraw.Draw(canvas)
+    l, t, r, b = d.textbbox((0, 0), text, font=f, anchor="ls", stroke_width=stroke)
+    pad = 4
+    layer = Image.new("RGBA", (r - l + 2 * pad, b - t + 2 * pad), (0, 0, 0, 0))
+    ImageDraw.Draw(layer).text((pad - l, pad - t), text, font=f, fill=fill, anchor="ls",
+                               stroke_width=stroke, stroke_fill=fill)
+    layer = layer.resize((max(1, round(layer.width * condense)), layer.height), Image.LANCZOS)
+    x, y = xy
+    left = x + round(l * condense) if anchor == "ls" else x - layer.width + round(pad * condense)
+    canvas.alpha_composite(layer, (round(left - pad * condense), y + t - pad))
+
+
+def condensed_len(d: ImageDraw.ImageDraw, text: str, f: ImageFont.FreeTypeFont, condense: float) -> float:
+    return d.textlength(text, font=f) * condense
 
 
 def tagline(canvas, y, size, sp):

@@ -133,12 +133,13 @@ class Template:
     """A post template: what the form asks for and how to draw the post.
 
     Put one in a module of `bi_studio/templates/` as `TEMPLATE = Template(...)` and it shows
-    up in BI Studio automatically.
+    up in the BI Studio catalog automatically, with a thumbnail rendered from the field defaults.
     """
     key: str                                  # unique, used for widget keys
-    name: str                                 # tab label
+    name: str                                 # card title in the catalog
     render: Callable[..., Image.Image]
     fields: list[Field]
     filename: Callable[[dict], str]           # values -> download file name (without .png)
-    order: int = 100                          # tab position (lower = first)
-    description: str = ""
+    order: int = 100                          # position in the catalog (lower = first)
+    description: str = ""                     # one line on the catalog card
+    category: str = "Other"                   # catalog group, e.g. "Match" or "Rankings"
