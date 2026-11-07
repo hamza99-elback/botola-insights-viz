@@ -117,6 +117,22 @@ class Photo:
 
 
 @dataclass(frozen=True)
+class Data:
+    """JSON data, uploaded as a file or pasted -> render(key=list).
+
+    keys: top-level keys holding the list, tried in order (e.g. ("heatmap", "points")); a JSON that is
+    itself a list works too. sample: returns sample data for the catalog thumbnail.
+    validate: optional check of the list; returns an error message to show, or None if it's usable.
+    """
+    key: str
+    label: str
+    keys: tuple[str, ...] = ()
+    sample: Callable[[], list] | None = None
+    validate: Callable[[list], str | None] | None = None
+    help: str | None = None
+
+
+@dataclass(frozen=True)
 class Row:
     """Puts several small fields (Text, Team, Color) side by side."""
     fields: tuple[Text | Team | Color, ...]
@@ -125,7 +141,7 @@ class Row:
         object.__setattr__(self, "fields", fields)
 
 
-Field = Text | Team | Color | Table | Photo | Row
+Field = Text | Team | Color | Table | Photo | Data | Row
 
 
 @dataclass(frozen=True)

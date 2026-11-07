@@ -1,18 +1,16 @@
 """Match stats: full-bleed match photo with a card of home/away stacked bars."""
 from __future__ import annotations
 
-import os
 import re
-from functools import lru_cache
 
 import numpy as np
 from PIL import Image, ImageColor, ImageDraw, ImageFilter
 
-from ..brand import ASSETS, NAVY, W, H, crest_image, font, load_teams, logo
+from ..brand import NAVY, W, H, crest_image, font, league_logo, load_teams, logo
 from ..fields import Color, Column, Photo, Placement, Row, Table, Team, Template
-from ..primitives import as_image, blur_composite, fit_text, guides, slug, spaced, spaced_len, tagline
+from ..primitives import (as_image, blur_composite, fit_text, guides, photo_backdrop, shade_and_grid, slug, spaced,
+                          spaced_len, tagline)
 
-LEAGUE_LOGO = os.path.join(ASSETS, "league_logo.png")  # optional, drawn top-left when present
 
 CARD_W, CARD_BOTTOM = 604, 1212
 PANEL_X0, PANEL_X1, PANEL_TOP = 93, 510, 170  # stats panel inside the card (card coordinates)
@@ -56,14 +54,8 @@ def _cover(photo: Image.Image, zoom: float, dx: int, dy: int) -> Image.Image:
     left, top, pw, ph = PLACEMENT.box(photo.width, photo.height, zoom, dx, dy)
     if left <= 0 and top <= 0 and left + pw >= W and top + ph >= H:
         canvas = Image.new("RGB", (W, H))  # photo covers everything: no fill needed
-    else:  # blur at quarter size: same soft look, ~16x less work
-        cover = max(W / photo.width, H / photo.height) / 4
-        bw, bh = max(1, round(photo.width * cover)), max(1, round(photo.height * cover))
-        qw, qh = W // 4, H // 4
-        small = photo.resize((bw, bh), Image.BILINEAR)
-        small = small.crop(((bw - qw) // 2, (bh - qh) // 2, (bw - qw) // 2 + qw, (bh - qh) // 2 + qh))
-        small = Image.blend(small.filter(ImageFilter.GaussianBlur(30 / 4)), Image.new("RGB", (qw, qh), NAVY), 0.45)
-        canvas = small.resize((W, H), Image.BILINEAR)
+    else:
+        canvas = photo_backdrop(photo, (W, H))
     # resize only the part of the photo that lands inside the post (zoomed in, most of it doesn't)
     x0, y0, x1, y1 = max(0, left), max(0, top), min(W, left + pw), min(H, top + ph)
     if x0 < x1 and y0 < y1:
@@ -71,34 +63,6 @@ def _cover(photo: Image.Image, zoom: float, dx: int, dy: int) -> Image.Image:
         src = ((x0 - left) * sx, (y0 - top) * sy, (x1 - left) * sx, (y1 - top) * sy)
         canvas.paste(photo.resize((x1 - x0, y1 - y0), Image.LANCZOS, box=src), (x0, y0))
     return canvas
-
-
-@lru_cache(maxsize=1)
-def _shade_grid_factors():
-    """Top/bottom darkening and the bottom pitch grid (same for every post) as out = img * keep + add."""
-    ys = np.linspace(0, 1, H, dtype=np.float32)[:, None]
-    a_bot = np.clip((ys - 0.58) / 0.42, 0, 1) ** 1.3 * 0.72
-    a_top = np.clip((0.14 - ys) / 0.14, 0, 1) * 0.35
-    alpha = np.broadcast_to(1 - (1 - a_bot) * (1 - a_top), (H, W))[..., None]
-    grid = np.zeros((H, W), np.float32)
-    grid[:, 13::27] = 1
-    grid[13::27, :] = 1
-    grid = (grid * np.clip((ys - 0.60) / 0.22, 0, 1) * 0.16)[..., None]
-    keep = (1 - alpha) * (1 - grid)
-    add = np.array((2, 8, 16), np.float32) * alpha * (1 - grid) + np.array((200, 225, 200), np.float32) * grid
-    # rows that change at all (the middle of the post is untouched): only those are computed
-    changed = np.nonzero((keep != 1).any(axis=(1, 2)) | (add != 0).any(axis=(1, 2)))[0]
-    bands = [(int(a[0]), int(a[-1]) + 1) for a in np.split(changed, np.nonzero(np.diff(changed) > 1)[0] + 1)]
-    return keep.astype(np.float32), add.astype(np.float32), bands
-
-
-def _shade_and_grid(canvas: Image.Image) -> Image.Image:
-    """Darken top and bottom, and fade a thin pitch grid into the bottom of the post."""
-    keep, add, bands = _shade_grid_factors()
-    arr = np.array(canvas, dtype=np.uint8)
-    for y0, y1 in bands:
-        arr[y0:y1] = (arr[y0:y1].astype(np.float32) * keep[y0:y1] + add[y0:y1]).clip(0, 255).astype(np.uint8)
-    return Image.fromarray(arr).convert("RGBA")
 
 
 def _paste_fit(canvas, img, cx, cy, box):
@@ -154,9 +118,9 @@ def render_match_stats(
     home_rgb = _rgb(home_color, teams.get(home_team, {}).get("color", (20, 140, 60)))
     away_rgb = _rgb(away_color, (255, 255, 255))
 
-    canvas = _shade_and_grid(_cover(as_image(photo).convert("RGB"), photo_zoom, photo_x, photo_y))
-    if os.path.exists(LEAGUE_LOGO):
-        _paste_fit(canvas, Image.open(LEAGUE_LOGO), 57, 79, 111)
+    canvas = shade_and_grid(_cover(as_image(photo).convert("RGB"), photo_zoom, photo_x, photo_y))
+    if league_logo() is not None:
+        _paste_fit(canvas, league_logo(), 57, 79, 111)
 
     rows = rows[:8]
     x0, y0, panel_h = _card_geometry(len(rows))

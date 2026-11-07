@@ -7,12 +7,11 @@ from functools import lru_cache
 import numpy as np
 from PIL import Image, ImageChops, ImageDraw
 
-from ..brand import ASSETS, NAVY, W, H, background, crest_image, font, load_teams, logo
+from ..brand import ASSETS, NAVY, W, H, background, crest_image, font, league_logo, load_teams, logo
 from ..fields import Column, Photo, Placement, Row, Table, Template, Text
-from ..primitives import as_image, blend_photo, draw_condensed, fit_text, guides, slug, spaced, tagline
+from ..primitives import as_image, blend_photo, draw_condensed, fit_text, guides, photo_backdrop, slug, spaced, tagline
 
-# optional logos, drawn when the files exist
-LEAGUE_LOGO = os.path.join(ASSETS, "league_logo.png")    # top-right
+# optional partner logo, drawn when the file exists (the league logo comes from brand.league_logo())
 PARTNER_LOGO = os.path.join(ASSETS, "partner_logo.png")  # bottom-right, next to the Botola Insights logo
 
 # photo is as tall as the post at zoom 1, its center at x = 900 (right of the list panel)
@@ -115,15 +114,21 @@ def render_player_list(
     """
     teams = load_teams()
     photo = as_image(photo).convert("RGB")
-    canvas = blend_photo(_panel_background().copy(), photo,
-                         PLACEMENT.box(photo.width, photo.height, photo_zoom, photo_x, photo_y), fade=_photo_mask())
+    box = PLACEMENT.box(photo.width, photo.height, photo_zoom, photo_x, photo_y)
+    left, top, pw, ph = box
+    # the photo side never shows the panel background: gaps get a blurred copy of the photo
+    side = _panel_background().copy()
+    if not (left <= PANEL_TOP_X and top <= 0 and left + pw >= W and top + ph >= H):
+        side.paste(photo_backdrop(photo, (W - PANEL_TOP_X, H)), (PANEL_TOP_X, 0))
+    side = blend_photo(side, photo, box)
+    canvas = Image.composite(side, _panel_background(), _photo_mask())
     keep, add = _shade()
     canvas = Image.fromarray((np.asarray(canvas, dtype=np.float32) * keep + add).clip(0, 255).astype(np.uint8))
     canvas = canvas.convert("RGBA")
     d = ImageDraw.Draw(canvas)
 
-    if os.path.exists(LEAGUE_LOGO):
-        _paste_fit(canvas, Image.open(LEAGUE_LOGO), 1035, 65, 60, 86)
+    if league_logo() is not None:
+        _paste_fit(canvas, league_logo(), 1035, 65, 60, 86)
 
     # title, subtitle, column headers
     t, f_t = fit_text(d, title.upper().strip(), "BebasNeue-Regular.ttf", 130, (PANEL_RIGHT - 40 - TEXT_X) / CONDENSE,

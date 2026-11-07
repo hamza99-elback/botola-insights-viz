@@ -4,7 +4,7 @@ Generates the Botola Insights Instagram posts (1080 x 1350 PNG) from values type
 Runs fully offline, with no AI service or subscription needed.
 
 Opened from the **BI Studio** section in the app sidebar. It starts on a catalog of templates grouped by
-category (**Match**, **Rankings**); **Create** opens a template's editor, **← All templates** goes back:
+category (**Match**, **Rankings**, **Players**); **Create** opens a template's editor, **← All templates** goes back:
 
 ```bash
 streamlit run streamlit_app.py
@@ -19,6 +19,7 @@ streamlit run streamlit_app.py
 | Match stats | `render_match_stats` |
 | Player stats | `render_player_stats` |
 | Player list | `render_player_list` |
+| Player heatmap | `render_player_heatmap` |
 
 The renderers can be used without the UI (e.g. for batch generation):
 
@@ -72,8 +73,8 @@ stacked bar per stat (home share = home / (home + away)).
 - **Background photo:** positioned with the same editor as Player top 5.
   Zoom 1.0 = the photo covers the whole post. If you zoom out or move it past an edge, the
   gap is filled with a blurred copy of the photo. The guides mark the card, league logo and tagline.
-- **League logo (top-left):** drawn when `bi_studio/assets/league_logo.png` exists
-  (transparent PNG, white logo). Skipped otherwise.
+- **League logo (top-left):** the Botola Pro logo from `bi_studio/assets/botolapro_logo.png`, turned
+  into a white one-color version automatically. Skipped if the file is missing.
 
 ## Player stats
 
@@ -101,9 +102,21 @@ Top 10 players for one stat: list panel on the left (the first row is highlighte
   Long names and values shrink to fit.
 - **Footnote:** the small line above the tagline (e.g. "* z-value shows ..."). Leave it empty to hide it.
 - **Photo:** positioned with the photo editor; it only shows right of the list panel.
-- **Optional logos:** `bi_studio/assets/league_logo.png` (top-right) and `bi_studio/assets/partner_logo.png`
-  (bottom-right, next to the Botola Insights logo) are drawn when the files exist.
+- **Logos:** the Botola Pro logo top-right (white version of `bi_studio/assets/botolapro_logo.png`), and an
+  optional `bi_studio/assets/partner_logo.png` bottom-right, next to the Botola Insights logo, when the file exists.
 - The big text uses Bebas Neue squeezed to 86% width to match the design's narrower letters.
+
+## Player heatmap
+
+A player's heatmap and key stats (one match or a season), in a card over the photo.
+
+- **Title and subtitle:** e.g. the player's name, and "VS RCAZ | BOTOLA PRO 26/27" or a season.
+- **Theme color:** heatmap, panel border and stat labels (default green `#0FC94E`).
+- **Heatmap data:** the Sofascore heatmap JSON, uploaded or pasted (same data as Charts > Heatmap):
+  `{"heatmap": [{"x": 52.1, "y": 40.3}, ...]}` (`"points"` or a plain list also work). x runs along the
+  pitch (0 = own goal), so the player attacks upwards, as the arrows show. Drawn by `charts/heatmap.py`.
+- **Stats:** up to 9 rows of label + value, printed as typed.
+- **Photo:** positioned with the photo editor; zoom 1.0 = the photo covers the post.
 
 ## Adjusting a crest (Team ranking)
 
@@ -174,6 +187,7 @@ Field types (`bi_studio/fields.py`):
 | `Color(key, label, default)` | color picker; with `default=None` it is optional (checkbox) | `key="#RRGGBB"` or `None` |
 | `Row(...)` | puts `Text` / `Team` / `Color` fields side by side | each field's value |
 | `Table(key, label, columns, default_rows, required, max_rows)` | editable table; a `Column` is `text`, `team` (club dropdown) or `number` | `key=list[dict]`, one dict per filled row |
+| `Data(key, label, keys=(...), sample=..., validate=...)` | JSON file upload or paste, with error messages | `key=list` (the list found under one of `keys`) |
 | `Photo(key, label, placement=..., guides=...)` | upload + drag-and-zoom editor + fine-tune sliders | `key` (PIL image), `key_zoom`, `key_x`, `key_y` |
 
 For a `Photo`, declare where it sits and what to keep clear, and use the same `Placement`

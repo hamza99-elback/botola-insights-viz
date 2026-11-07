@@ -97,6 +97,7 @@ class Heatmap:
         show_figure: bool = False,
         color_palette=["#FFFFFF00", "#D33131", "#5F0202"],
         line_color="#424242",
+        alpha=1,
     ):
         # pearl_earring_cmap_100 = LinearSegmentedColormap.from_list("Pearl Earring - 100 colors", ['#FFFFFF',"#7082E7", "#1B234E"], N=100) # ['#F7F7F7', '#C384FF','#00FFD4', '#FBFF00', '#FE5202'], ['none','#C384FF','#00FFD4', '#FBFF00', '#FE5202']
         # pearl_earring_cmap_100 = LinearSegmentedColormap.from_list("Pearl Earring - 100 colors", ['#FFFFFF',"#70E7CD", "#1B4E2C"], N=100)
@@ -131,7 +132,7 @@ class Heatmap:
             cmap=pearl_earring_cmap_100,
             edgecolors="none",
             zorder=-1,
-            alpha=1,
+            alpha=alpha,  # None = use the transparency of the color palette
         )
         if show_figure:
             plt.show()

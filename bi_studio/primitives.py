@@ -1,9 +1,12 @@
-"""Drawing helpers shared by the templates (Pillow only)."""
+"""Drawing helpers shared by the templates (Pillow + numpy)."""
 from __future__ import annotations
 
+from functools import lru_cache
+
+import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
-from .brand import TAGLINE, W, H, font
+from .brand import NAVY, TAGLINE, W, H, font
 
 ELLIPSIS = "…"
 
@@ -88,6 +91,19 @@ def blur_composite(canvas: Image.Image, layer: Image.Image, xy: tuple[int, int],
         canvas.alpha_composite(padded.crop((x0 - x, y0 - y, x1 - x, y1 - y)), (x0, y0))
 
 
+def photo_backdrop(photo: Image.Image, size: tuple[int, int], darken: float = 0.45) -> Image.Image:
+    """Blurred, darkened cover-fit copy of the photo at `size`: fills gaps around a zoomed-out or
+    moved photo so they read as part of the photo. Blurred at quarter size (same look, much faster)."""
+    w, h = size
+    cover = max(w / photo.width, h / photo.height) / 4
+    bw, bh = max(1, round(photo.width * cover)), max(1, round(photo.height * cover))
+    qw, qh = max(1, w // 4), max(1, h // 4)
+    small = photo.convert("RGB").resize((bw, bh), Image.BILINEAR)
+    small = small.crop(((bw - qw) // 2, (bh - qh) // 2, (bw - qw) // 2 + qw, (bh - qh) // 2 + qh))
+    small = Image.blend(small.filter(ImageFilter.GaussianBlur(30 / 4)), Image.new("RGB", (qw, qh), NAVY), darken)
+    return small.resize((w, h), Image.BILINEAR)
+
+
 def blend_photo(canvas: Image.Image, photo: Image.Image, box: tuple[int, int, int, int],
                 fade: Image.Image | None = None, soft_edge: int = 30) -> Image.Image:
     """Blend photo (any size) into canvas at box = (left, top, width, height) from Placement.box().
@@ -145,6 +161,34 @@ def draw_condensed(canvas: Image.Image, xy, text: str, f: ImageFont.FreeTypeFont
 
 def condensed_len(d: ImageDraw.ImageDraw, text: str, f: ImageFont.FreeTypeFont, condense: float) -> float:
     return d.textlength(text, font=f) * condense
+
+
+@lru_cache(maxsize=1)
+def shade_grid_factors():
+    """Top/bottom darkening and the bottom pitch grid (same for every post) as out = img * keep + add."""
+    ys = np.linspace(0, 1, H, dtype=np.float32)[:, None]
+    a_bot = np.clip((ys - 0.58) / 0.42, 0, 1) ** 1.3 * 0.72
+    a_top = np.clip((0.14 - ys) / 0.14, 0, 1) * 0.35
+    alpha = np.broadcast_to(1 - (1 - a_bot) * (1 - a_top), (H, W))[..., None]
+    grid = np.zeros((H, W), np.float32)
+    grid[:, 13::27] = 1
+    grid[13::27, :] = 1
+    grid = (grid * np.clip((ys - 0.60) / 0.22, 0, 1) * 0.16)[..., None]
+    keep = (1 - alpha) * (1 - grid)
+    add = np.array((2, 8, 16), np.float32) * alpha * (1 - grid) + np.array((200, 225, 200), np.float32) * grid
+    # rows that change at all (the middle of the post is untouched): only those are computed
+    changed = np.nonzero((keep != 1).any(axis=(1, 2)) | (add != 0).any(axis=(1, 2)))[0]
+    bands = [(int(a[0]), int(a[-1]) + 1) for a in np.split(changed, np.nonzero(np.diff(changed) > 1)[0] + 1)]
+    return keep.astype(np.float32), add.astype(np.float32), bands
+
+
+def shade_and_grid(canvas: Image.Image) -> Image.Image:
+    """Darken top and bottom, and fade a thin pitch grid into the bottom of the post."""
+    keep, add, bands = shade_grid_factors()
+    arr = np.array(canvas, dtype=np.uint8)
+    for y0, y1 in bands:
+        arr[y0:y1] = (arr[y0:y1].astype(np.float32) * keep[y0:y1] + add[y0:y1]).clip(0, 255).astype(np.uint8)
+    return Image.fromarray(arr).convert("RGBA")
 
 
 def tagline(canvas, y, size, sp):

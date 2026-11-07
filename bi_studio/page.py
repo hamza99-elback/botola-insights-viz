@@ -17,6 +17,7 @@ import glob
 import hashlib
 import inspect
 import io
+import json
 import os
 
 import pandas as pd
@@ -24,7 +25,7 @@ import streamlit as st
 from PIL import Image, ImageOps
 
 from .brand import background, load_teams
-from .fields import Color, Photo, Row, Table, Team, Template, Text
+from .fields import Color, Data, Photo, Row, Table, Team, Template, Text
 from .photo_editor import photo_editor
 from .primitives import guides
 from .templates import load_templates_with_errors
@@ -214,6 +215,35 @@ def _photo(f: Photo, prefix: str, values: dict) -> dict:
     return out
 
 
+def _data(f: Data, prefix: str) -> dict:
+    """JSON from an uploaded file or pasted text -> the list found under f.keys (None if missing/invalid)."""
+    st.markdown(f"**{f.label}**")
+    k = f"{prefix}_{f.key}"
+    upload = st.file_uploader("JSON file", type=["json"], key=f"{k}_file", help=f.help)
+    pasted = st.text_area("...or paste the JSON here", key=f"{k}_text", height=90)
+    raw = upload.getvalue().decode("utf-8", errors="replace") if upload is not None else pasted
+    if not raw.strip():
+        return {f.key: None}
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        st.error("This isn't valid JSON.")
+        return {f.key: None}
+    items = data if isinstance(data, list) else next(
+        (data[key] for key in f.keys if isinstance(data, dict) and isinstance(data.get(key), list)), None)
+    if not items:
+        names = '" or "'.join(f.keys)
+        where = f' under "{names}"' if f.keys else ""
+        st.error(f"No data found{where}.")
+        return {f.key: None}
+    problem = f.validate(items) if f.validate else None
+    if problem:
+        st.error(problem)
+        return {f.key: None}
+    st.caption(f"{len(items)} items loaded.")
+    return {f.key: items}
+
+
 def _field(f, prefix: str, team_names: list[str], values: dict) -> dict:
     """Draw one field's widgets; `values` = what the fields above it returned (e.g. for guides)."""
     if isinstance(f, Row):
@@ -232,6 +262,8 @@ def _field(f, prefix: str, team_names: list[str], values: dict) -> dict:
         return _table(f, prefix, team_names)
     if isinstance(f, Photo):
         return _photo(f, prefix, values)
+    if isinstance(f, Data):
+        return _data(f, prefix)
     raise TypeError(f"Unknown field type: {type(f).__name__}")
 
 
@@ -243,6 +275,8 @@ def _sample_values(t: Template) -> dict:
         for g in (f.fields if isinstance(f, Row) else (f,)):
             if isinstance(g, Table):
                 values[g.key] = [dict(r) for r in g.default_rows]
+            elif isinstance(g, Data):
+                values[g.key] = g.sample() if g.sample else []
             elif isinstance(g, Photo):
                 values[g.key] = photo
                 values[f"{g.key}_zoom"], values[f"{g.key}_x"], values[f"{g.key}_y"] = g.zoom[2], g.x[2], g.y[2]
@@ -267,6 +301,8 @@ def _missing(t: Template, values: dict) -> str | None:
             return f"Upload the {f.title.lower()} to see the preview."
         if isinstance(f, Table) and not values.get(f.key):
             return "Fill at least one row."
+        if isinstance(f, Data) and not values.get(f.key):
+            return f"Add the {f.label.lower()} to see the preview."
     return None
 
 
